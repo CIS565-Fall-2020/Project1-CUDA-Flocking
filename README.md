@@ -18,7 +18,7 @@ Project 1 - Flocking**
 
 - **Q: For each implementation, how does changing the number of boids affect performance? Why do you think this is?**
 
-  A: The more boids there are, the longer it takes to simulate one time step. The naive implementation is `O(N^2)`. For the grid-based implementations, when there are relatively few boids, the expected number of boids in one boid's neighborhood is constant, so the time complexity is `O(N)` at this point. However, as the number of boids increase, it'll converge towards `O(N^2)` as well since the simulation happens in a finite volume. Although the computation happens on the GPU, it can only reduce computation time by a constant factor when the number of boids increases beyond the amount of available computation hardware.
+  A: The more boids there are, the longer it takes to simulate one time step. The naive implementation is O(*n*²), where *n* is the number of boids. For the grid-based implementations, when there are relatively few boids, the expected number of boids in one boid's neighborhood is constant, so the time complexity is Ω(*n*) at this point. However, as the number of boids increase, it'll converge towards O(*n*²) as well since the simulation happens in a finite volume. Although the computation happens on the GPU, it can only reduce computation time by a constant factor when the number of boids increases beyond the amount of available computation hardware.
 
 - **Q: For each implementation, how does changing the block count and block size affect performance? Why do you think this is?**
 
@@ -30,7 +30,7 @@ Project 1 - Flocking**
 
 - **Q: Did changing cell width and checking 27 vs 8 neighboring cells affect performance? Why or why not? Be careful: it is insufficient (and possibly incorrect) to say that 27-cell is slower simply because there are more cells to check!**
 
-  A: Yes. Using 27 cells is actually faster in my profiling. Since the cells are smaller, the volume of 27 half-size cells is smaller than 8 full-size cells by over a half. This would allow each thread to check a smaller number of boids, and would be quite beneficial when the total number of boids is large.
+  A: Yes. Using 27 cells is actually faster in my profiling. The volume of 27 half-sized cells is smaller than 8 full-sized cells by over a half. This would allow each thread to check a smaller number of boids, and would be especially beneficial when the total number of boids is large.
 
 ## Profiling
 
