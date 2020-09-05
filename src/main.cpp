@@ -14,12 +14,50 @@
 
 // LOOK-2.1 LOOK-2.3 - toggles for UNIFORM_GRID and COHERENT_GRID
 #define VISUALIZE 1
-#define UNIFORM_GRID 0
-#define COHERENT_GRID 0
+#define UNIFORM_GRID 1
+#define COHERENT_GRID 1
 
 // LOOK-1.2 - change this to adjust particle count in the simulation
-const int N_FOR_VIS = 5000;
+const int N_FOR_VIS = 100000;
 const float DT = 0.2f;
+
+struct min_max_mean_stddev {
+public:
+    void add_sample(double v) {
+        _min = std::min(_min, v);
+        _max = std::max(_max, v);
+        _sum += v;
+        _sum_of_squares += v * v;
+        ++_num_samples;
+    }
+
+    std::size_t num_samples() const {
+        return _num_samples;
+    }
+
+    double min() const {
+        return _min;
+    }
+    double max() const {
+        return _max;
+    }
+    double mean() const {
+        return _sum / _num_samples;
+    }
+    double variance() const {
+        return (_sum_of_squares - _sum * _sum / _num_samples) / (_num_samples - 1);
+    }
+    double stddev() const {
+        return std::sqrt(variance());
+    }
+private:
+    double
+        _min = std::numeric_limits<double>::max(),
+        _max = std::numeric_limits<double>::min(),
+        _sum = 0.0,
+        _sum_of_squares = 0.0;
+    std::size_t _num_samples = 0;
+};
 
 /**
 * C main function.
@@ -42,6 +80,11 @@ int main(int argc, char* argv[]) {
 
 std::string deviceName;
 GLFWwindow *window;
+
+cudaEvent_t start, stop;
+min_max_mean_stddev stats;
+bool show_stats = true;
+int discard = 0;
 
 /**
 * Initialization of CUDA and GLFW.
@@ -116,6 +159,9 @@ bool init(int argc, char **argv) {
   initShaders(program);
 
   glEnable(GL_DEPTH_TEST);
+
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
 
   return true;
 }
@@ -196,6 +242,7 @@ void initShaders(GLuint * program) {
     cudaGLMapBufferObject((void**)&dptrVertVelocities, boidVBO_velocities);
 
     // execute the kernel
+    cudaEventRecord(start);
     #if UNIFORM_GRID && COHERENT_GRID
     Boids::stepSimulationCoherentGrid(DT);
     #elif UNIFORM_GRID
@@ -203,6 +250,7 @@ void initShaders(GLuint * program) {
     #else
     Boids::stepSimulationNaive(DT);
     #endif
+    cudaEventRecord(stop);
 
     #if VISUALIZE
     Boids::copyBoidsToVBO(dptrVertPositions, dptrVertVelocities);
@@ -210,6 +258,15 @@ void initShaders(GLuint * program) {
     // unmap buffer object
     cudaGLUnmapBufferObject(boidVBO_positions);
     cudaGLUnmapBufferObject(boidVBO_velocities);
+
+    cudaEventSynchronize(stop);
+    float ms = 0.0f;
+    cudaEventElapsedTime(&ms, start, stop);
+    if (discard < 10) { // discard first 10 samples
+        ++discard;
+    } else {
+        stats.add_sample(ms);
+    }
   }
 
   void mainLoop() {
@@ -255,6 +312,17 @@ void initShaders(GLuint * program) {
 
       glfwSwapBuffers(window);
       #endif
+
+      // collect 10000 samples or samples for 60 seconds
+      if (show_stats && (stats.num_samples() >= 10000 || time > 60.0)) {
+          std::cout <<
+              "stats for " << stats.num_samples() << " samples:\n" <<
+              "  min = " << stats.min() << "\n" <<
+              "  max = " << stats.max() << "\n" <<
+              "  mean = " << stats.mean() << "\n" <<
+              "  stddev = " << stats.stddev() << "\n";
+          show_stats = false;
+      }
     }
     glfwDestroyWindow(window);
     glfwTerminate();
