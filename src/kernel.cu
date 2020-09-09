@@ -387,6 +387,58 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // - Access each boid in the cell and compute velocity change from
   //   the boids rules, if this boid is within the neighborhood distance.
   // - Clamp the speed change before putting the new speed in vel2
+	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+	if (index >= N) {
+		return;
+	}
+	float r = imax(imax(rule1Distance, rule2Distance), rule3Distance);
+
+	glm::vec3 pos_min = glm::clamp(pos[index] - glm::vec3(r, r, r), -scene_scale, scene_scale);
+	glm::vec3 pos_max = glm::clamp(pos[index] + glm::vec3(r, r, r), -scene_scale, scene_scale);
+	glm::vec3 cell_min = glm::floor((pos_min - gridMin) * inverseCellWidth);
+	glm::vec3 cell_max = glm::floor((pos_max - gridMin) * inverseCellWidth);
+
+	glm::vec3 perceived_center = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 c = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 perceived_velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+	int n1 = 0;
+	int n3 = 0;
+
+	for (int i = cell_min.x; i <= cell_max.x; i++) {
+		for (int j = cell_min.y; j <= cell_max.y; j++) {
+			for (int k = cell_min.z; k <= cell_max.z; k++) {
+				int cellIdx = gridIndex3Dto1D(i, j, k, gridResolution);
+				int startIdx = gridCellStartIndices[cellIdx];
+				int endIdx = gridCellEndIndices[cellIdx];
+				for (int p = startIdx; p <= endIdx; p++) {
+					int idx = particleArrayIndices[p];
+					float dist = glm::distance(pos[index], pos[idx]);
+					if (dist < rule1Distance) {
+						perceived_center += pos[idx];
+						n1++;
+					}
+					if (dist < rule2Distance) {
+						c -= (pos[idx] - pos[index]);
+					}
+					if (dist < rule3Distance) {
+						perceived_velocity += vel1[idx];
+						n3++;
+					}
+				}
+			}
+		}
+	}
+	perceived_center /= n1;
+	perceived_velocity /= n3;
+	glm::vec3 new_vel = vel1[index] + (perceived_center - pos[index]) * rule1Scale
+		+ c * rule2Scale + perceived_velocity * rule3Scale;
+	// Clamp the speed
+	float speed = glm::length(new_vel);
+	if (speed > maxSpeed) {
+		new_vel = glm::normalize(new_vel) * maxSpeed;
+	}
+
+	vel2[index] = new_vel;
 }
 
 __global__ void kernUpdateVelNeighborSearchCoherent(
