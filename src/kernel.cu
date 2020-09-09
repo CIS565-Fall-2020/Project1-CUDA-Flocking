@@ -234,6 +234,8 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
 	glm::vec3 perceived_center = glm::vec3(0.0f, 0.0f, 0.0f);
 	glm::vec3 c = glm::vec3(0.0f, 0.0f, 0.0f);
 	glm::vec3 perceived_velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+	int n1 = 0;
+	int n3 = 0;
 
 	for (int i = 0; i < N; i++) {
 		if (i == iSelf) {
@@ -241,27 +243,24 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
 		}
 		float dist = glm::distance(pos[i], pos[iSelf]);
 		// Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
-		int n1 = 0;
 		if (dist < rule1Distance) {
 			perceived_center += pos[i];
 			n1++;
 		}
-		perceived_center /= n1;
-
+		
 		// Rule 2: boids try to stay a distance d away from each other
 		if (dist < rule2Distance) {
 			c -= (pos[i] - pos[iSelf]);
 		}
 
 		// Rule 3: boids try to match the speed of surrounding boids
-		int n3 = 0;
 		if (dist < rule3Distance) {
 			perceived_velocity += vel[i];
 			n3++;
 		}
-		perceived_velocity /= n3;
 	}
-  
+	perceived_center /= n1;
+	perceived_velocity /= n3;
 	glm::vec3 new_vel = vel[iSelf] + (perceived_center - pos[iSelf]) * rule1Scale
 		+ c * rule2Scale + perceived_velocity * rule3Scale;
 
@@ -282,13 +281,10 @@ __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
 	glm::vec3 new_vel = computeVelocityChange(N, index, pos, vel1);
 
 	// Clamp the speed
-	new_vel.x = new_vel.x > maxSpeed ? maxSpeed : new_vel.x;
-	new_vel.y = new_vel.y > maxSpeed ? maxSpeed : new_vel.y;
-	new_vel.z = new_vel.z > maxSpeed ? maxSpeed : new_vel.z;
-
-	new_vel.x = new_vel.x < -maxSpeed ? -maxSpeed : new_vel.x;
-	new_vel.y = new_vel.y < -maxSpeed ? -maxSpeed : new_vel.y;
-	new_vel.z = new_vel.z < -maxSpeed ? -maxSpeed : new_vel.z;
+	float speed = glm::length(new_vel);
+	if (speed > maxSpeed) {
+		new_vel = glm::normalize(new_vel) * maxSpeed;
+	}
 
 	// Record the new velocity into vel2. Question: why NOT vel1?
 	vel2[index] = new_vel;
