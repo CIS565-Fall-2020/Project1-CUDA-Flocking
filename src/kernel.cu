@@ -137,39 +137,51 @@ __global__ void kernGenerateRandomPosArray(int time, int N, glm::vec3 * arr, flo
 * Initialize memory, update some globals
 */
 void Boids::initSimulation(int N) {
-  numObjects = N;
-  dim3 fullBlocksPerGrid((N + blockSize - 1) / blockSize);
+    numObjects = N;
+    dim3 fullBlocksPerGrid((N + blockSize - 1) / blockSize);
 
-  // LOOK-1.2 - This is basic CUDA memory management and error checking.
-  // Don't forget to cudaFree in  Boids::endSimulation.
-  cudaMalloc((void**)&dev_pos, N * sizeof(glm::vec3));
-  checkCUDAErrorWithLine("cudaMalloc dev_pos failed!");
+    // LOOK-1.2 - This is basic CUDA memory management and error checking.
+    // Don't forget to cudaFree in  Boids::endSimulation.
+    cudaMalloc((void**)&dev_pos, N * sizeof(glm::vec3));
+    checkCUDAErrorWithLine("cudaMalloc dev_pos failed!");
 
-  cudaMalloc((void**)&dev_vel1, N * sizeof(glm::vec3));
-  checkCUDAErrorWithLine("cudaMalloc dev_vel1 failed!");
+    cudaMalloc((void**)&dev_vel1, N * sizeof(glm::vec3));
+    checkCUDAErrorWithLine("cudaMalloc dev_vel1 failed!");
 
-  cudaMalloc((void**)&dev_vel2, N * sizeof(glm::vec3));
-  checkCUDAErrorWithLine("cudaMalloc dev_vel2 failed!");
+    cudaMalloc((void**)&dev_vel2, N * sizeof(glm::vec3));
+    checkCUDAErrorWithLine("cudaMalloc dev_vel2 failed!");
 
-  // LOOK-1.2 - This is a typical CUDA kernel invocation.
-  kernGenerateRandomPosArray<<<fullBlocksPerGrid, blockSize>>>(1, numObjects,
+    // LOOK-1.2 - This is a typical CUDA kernel invocation.
+    kernGenerateRandomPosArray<<<fullBlocksPerGrid, blockSize>>>(1, numObjects,
     dev_pos, scene_scale);
-  checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
+    checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
 
-  // LOOK-2.1 computing grid params
-  gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
-  int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
-  gridSideCount = 2 * halfSideCount;
+    // LOOK-2.1 computing grid params
+    gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
+    int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
+    gridSideCount = 2 * halfSideCount;
 
-  gridCellCount = gridSideCount * gridSideCount * gridSideCount;
-  gridInverseCellWidth = 1.0f / gridCellWidth;
-  float halfGridWidth = gridCellWidth * halfSideCount;
-  gridMinimum.x -= halfGridWidth;
-  gridMinimum.y -= halfGridWidth;
-  gridMinimum.z -= halfGridWidth;
+    gridCellCount = gridSideCount * gridSideCount * gridSideCount;
+    gridInverseCellWidth = 1.0f / gridCellWidth;
+    float halfGridWidth = gridCellWidth * halfSideCount;
+    gridMinimum.x -= halfGridWidth;
+    gridMinimum.y -= halfGridWidth;
+    gridMinimum.z -= halfGridWidth;
 
-  // TODO-2.1 TODO-2.3 - Allocate additional buffers here.
-  cudaDeviceSynchronize();
+    // TODO-2.1 TODO-2.3 - Allocate additional buffers here.
+    cudaMalloc((void**)&dev_particleArrayIndices, N * sizeof(int));
+    checkCUDAErrorWithLine("cudaMalloc dev_particleArrayIndices failed!");
+
+    cudaMalloc((void**)&dev_particleGridIndices, N * sizeof(int));
+    checkCUDAErrorWithLine("cudaMalloc dev_particleGridIndices failed!");
+
+    cudaMalloc((void**)&dev_gridCellStartIndices, N * sizeof(int));
+    checkCUDAErrorWithLine("cudaMalloc dev_gridCellStartIndices failed!");
+
+    cudaMalloc((void**)&dev_gridCellEndIndices, N * sizeof(int));
+    checkCUDAErrorWithLine("cudaMalloc dev_gridCellEndIndices failed!");
+  
+    cudaDeviceSynchronize();
 }
 
 
@@ -294,6 +306,7 @@ __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
     if (glm::length(newVel) > maxSpeed) {
         newVel *= maxSpeed / glm::length(newVel);
     }
+
     // Because other threads will potentially access velocity of this boid,
     // we cannot directly update vel1. Instead, we store the value in vel2.
     vel2[index] = newVel;
@@ -335,12 +348,23 @@ __device__ int gridIndex3Dto1D(int x, int y, int z, int gridResolution) {
 }
 
 __global__ void kernComputeIndices(int N, int gridResolution,
-  glm::vec3 gridMin, float inverseCellWidth,
-  glm::vec3 *pos, int *indices, int *gridIndices) {
+    glm::vec3 gridMin, float inverseCellWidth,
+    glm::vec3 *pos, int *indices, int *gridIndices) {
     // TODO-2.1
     // - Label each boid with the index of its grid cell.
     // - Set up a parallel array of integer indices as pointers to the actual
     //   boid data in pos and vel1/vel2
+
+    int index = threadIdx.x + blockIdx.x * blockDim.x;
+    if (index > N) {
+        return;
+    }
+    glm::vec3 position = pos[indices[index]];
+    glm::vec3 offset = (position - gridMin) * inverseCellWidth;
+    int gi = gridIndex3Dto1D((int)offset.x, (int)offset.y, (int)offset.z,
+        gridResolution);
+    gridIndices[index] = gi;
+    // todo: test this implementation
 }
 
 // LOOK-2.1 Consider how this could be useful for indicating that a cell
@@ -442,11 +466,15 @@ void Boids::stepSimulationCoherentGrid(float dt) {
 }
 
 void Boids::endSimulation() {
-  cudaFree(dev_vel1);
-  cudaFree(dev_vel2);
-  cudaFree(dev_pos);
+    cudaFree(dev_vel1);
+    cudaFree(dev_vel2);
+    cudaFree(dev_pos);
 
-  // TODO-2.1 TODO-2.3 - Free any additional buffers here.
+    // TODO-2.1 TODO-2.3 - Free any additional buffers here.
+    cudaFree(dev_particleArrayIndices);
+    cudaFree(dev_particleGridIndices);
+    cudaFree(dev_gridCellStartIndices);
+    cudaFree(dev_gridCellEndIndices);
 }
 
 void Boids::unitTest() {
