@@ -388,6 +388,16 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
 	}
 }
 
+__global__ void kernReorderData(int N, int *particleArrayIndices,
+	glm::vec3 *pos, glm::vec3 *vel, glm::vec3 *coh_pos, glm::vec3 *coh_vel) {
+	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+	if (index < N) {
+		int d = particleArrayIndices[index];
+		coh_pos[index] = pos[d];
+		coh_vel[index] = vel[d];
+	}
+}
+
 __global__ void kernUpdateVelNeighborSearchScattered(
   int N, int gridResolution, glm::vec3 gridMin,
   float inverseCellWidth, float cellWidth,
@@ -596,9 +606,25 @@ void Boids::stepSimulationCoherentGrid(float dt) {
   // - BIG DIFFERENCE: use the rearranged array index buffer to reshuffle all
   //   the particle data in the simulation array.
   //   CONSIDER WHAT ADDITIONAL BUFFERS YOU NEED
+	kernReorderData << <fullBlocksPerGrid, blockSize >> > (numObjects, dev_particleArrayIndices, dev_pos, dev_vel1, dev_coh_pos, dev_coh_vel);
+	glm::vec3 *tmp = dev_pos;
+	dev_pos = dev_coh_pos;
+	dev_coh_pos = tmp;
+
+	tmp = dev_vel1;
+	dev_vel1 = dev_coh_vel;
+	dev_coh_vel = tmp;
+
   // - Perform velocity updates using neighbor search
+	kernUpdateVelNeighborSearchCoherent << <fullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
+		dev_gridCellStartIndices, dev_gridCellEndIndices,
+		dev_pos, dev_vel1, dev_vel2);
   // - Update positions
+	kernUpdatePos << <fullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos, dev_vel1);
   // - Ping-pong buffers as needed. THIS MAY BE DIFFERENT FROM BEFORE.
+	tmp = dev_vel1;
+	dev_vel1 = dev_vel2;
+	dev_vel2 = tmp;
 }
 
 void Boids::endSimulation() {
