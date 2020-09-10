@@ -230,7 +230,7 @@ void Boids::copyBoidsToVBO(float *vbodptr_positions, float *vbodptr_velocities) 
 * in the `pos` and `vel` arrays.
 */
 __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *pos, const glm::vec3 *vel) {
-    glm::vec3 newVelocity(0.0f, 0.0f, 0.0f);
+    glm::vec3 newVelocity = vel[iSelf];
 
     float3 center = make_float3(0.0f, 0.0f, 0.0f);
     float3 separate = make_float3(0.0f, 0.0f, 0.0f);
@@ -302,7 +302,7 @@ __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
         newVelocity = (newVelocity / speed) * maxSpeed;
     }
   // Record the new velocity into vel2. Question: why NOT vel1?
-    vel2 = &newVelocity;
+    vel2[index] = newVelocity;
 }
 
 /**
@@ -406,7 +406,14 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 */
 void Boids::stepSimulationNaive(float dt) {
   // TODO-1.2 - use the kernels you wrote to step the simulation forward in time.
-  // TODO-1.2 ping-pong the velocity buffers
+    dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
+    kernUpdateVelocityBruteForce <<<fullBlocksPerGrid, blockSize >>> (numObjects,  
+        dev_pos, dev_vel1, dev_vel2);
+    checkCUDAErrorWithLine("kernUpdateVelocityBruteForce failed!");
+    // TODO-1.2 ping-pong the velocity buffers
+    kernUpdatePos <<<fullBlocksPerGrid, blockSize >>> (numObjects, dt, dev_pos, dev_vel2);
+    checkCUDAErrorWithLine("kernUpdatePos failed!");
+
 }
 
 void Boids::stepSimulationScatteredGrid(float dt) {
