@@ -229,7 +229,7 @@ __device__ glm::vec3 rule_1(const int& N, const int& iSelf, const glm::vec3* pos
 
     int num_of_neighbors = 0;
     for (int i = 0; i < N && i != iSelf; i++) {
-        if (glm::distance(pos[i], pos[iSelf]) < rule1Distance) {
+        if (glm::length(pos[i] - pos[iSelf]) < rule1Distance) {
             num_of_neighbors++;
             perceived_center += pos[i];
         }
@@ -237,9 +237,16 @@ __device__ glm::vec3 rule_1(const int& N, const int& iSelf, const glm::vec3* pos
 
     if (num_of_neighbors != 0) {
         perceived_center /= (float)num_of_neighbors;
+        
+        perceived_center = (perceived_center - pos[iSelf]) * rule1Scale;
+    }
+    else {
+        // the tricky part is the follow line
+        perceived_center = glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
-    return (perceived_center - pos[iSelf]) * rule1Scale;
+    
+    return perceived_center;
 }
 
 __device__ glm::vec3 rule_2(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
@@ -278,7 +285,7 @@ __device__ glm::vec3 rule_3(const int& N, const int& iSelf, const glm::vec3* pos
 */
 
 __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *pos, const glm::vec3 *vel) {
-    glm::vec3 out;
+    glm::vec3 out(0.0f);
   // Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
   // Rule 2: boids try to stay a distance d away from each other
   // Rule 3: boids try to match the speed of surrounding boids
@@ -329,7 +336,7 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
 //#endif
 //        velocity *= rule3Scale;
 //    }
-//    return center;
+//    return repulsion + velocity;
     //return center + repulsion + velocity;
 }
 
