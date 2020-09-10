@@ -230,10 +230,58 @@ void Boids::copyBoidsToVBO(float *vbodptr_positions, float *vbodptr_velocities) 
 * in the `pos` and `vel` arrays.
 */
 __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *pos, const glm::vec3 *vel) {
+    glm::vec3 newVelocity(0.0f, 0.0f, 0.0f);
+
+    float3 center = make_float3(0.0f, 0.0f, 0.0f);
+    float3 separate = make_float3(0.0f, 0.0f, 0.0f);
+    float3 cohesion = make_float3(0.0f, 0.0f, 0.0f);
+
+    int neighborCount = 0;
+
+    float3 thisBoidPos = make_float3(pos[iSelf].x, pos[iSelf].y, pos[iSelf].z);
+
   // Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
-  // Rule 2: boids try to stay a distance d away from each other
-  // Rule 3: boids try to match the speed of surrounding boids
-  return glm::vec3(0.0f, 0.0f, 0.0f);
+    for (int i = 0; i < N; i++) {
+        if (i == iSelf) continue;
+        float distance = glm::length(pos[i] - pos[iSelf]);
+        float3 thatBoidPos = make_float3(pos[i].x, pos[i].y, pos[i].z);
+        if (distance < rule1Distance) {
+            center.x += thatBoidPos.x;
+            center.y += thatBoidPos.y;
+            center.z += thatBoidPos.z;
+            neighborCount += 1.0;
+            // Rule 2: boids try to stay a distance d away from each other
+            if (distance < rule2Distance) {
+                separate.x -= thatBoidPos.x - thisBoidPos.x;
+                separate.y -= thatBoidPos.y - thisBoidPos.y;
+                separate.z -= thatBoidPos.z - thisBoidPos.z;
+            }
+            // Rule 3: boids try to match the speed of surrounding boids
+            cohesion.x += vel[i].x;
+            cohesion.y += vel[i].y;
+            cohesion.z += vel[i].z;
+        }
+    }
+
+    if (neighborCount > 0) {
+        center.x /= neighborCount;
+        center.y /= neighborCount;
+        center.z /= neighborCount;
+
+        newVelocity.x += (center.x - thisBoidPos.x) * rule1Scale;
+        newVelocity.y += (center.y - thisBoidPos.y) * rule1Scale;
+        newVelocity.z += (center.z - thisBoidPos.z) * rule1Scale;
+
+        newVelocity.x += cohesion.x * rule3Scale;
+        newVelocity.y += cohesion.y * rule3Scale;
+        newVelocity.z += cohesion.z * rule3Scale;
+    }
+
+    newVelocity.x += separate.x * rule2Scale;
+    newVelocity.y += separate.y * rule2Scale;
+    newVelocity.z += separate.z * rule2Scale;
+
+    return newVelocity;
 }
 
 /**
@@ -243,8 +291,18 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
 __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
   glm::vec3 *vel1, glm::vec3 *vel2) {
   // Compute a new velocity based on pos and vel1
+    int index = threadIdx.x + (blockIdx.x * blockDim.x);
+    if (index >= N) {
+        return;
+    }
+    glm::vec3 newVelocity = computeVelocityChange(N, index, pos, vel1);
   // Clamp the speed
+    float speed = glm::length(newVelocity);
+    if (speed > maxSpeed) {
+        newVelocity = (newVelocity / speed) * maxSpeed;
+    }
   // Record the new velocity into vel2. Question: why NOT vel1?
+    vel2 = &newVelocity;
 }
 
 /**
