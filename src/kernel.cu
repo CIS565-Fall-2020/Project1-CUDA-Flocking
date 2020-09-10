@@ -245,13 +245,13 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
         if (i == iSelf) continue;
         float distance = glm::length(pos[i] - pos[iSelf]);
         float3 thatBoidPos = make_float3(pos[i].x, pos[i].y, pos[i].z);
-        if (distance < rule1Distance) {
+        if (distance < rule1Distance * scene_scale) {
             center.x += thatBoidPos.x;
             center.y += thatBoidPos.y;
             center.z += thatBoidPos.z;
             neighborCount += 1.0;
             // Rule 2: boids try to stay a distance d away from each other
-            if (distance < rule2Distance) {
+            if (distance < rule2Distance * scene_scale) {
                 separate.x -= thatBoidPos.x - thisBoidPos.x;
                 separate.y -= thatBoidPos.y - thisBoidPos.y;
                 separate.z -= thatBoidPos.z - thisBoidPos.z;
