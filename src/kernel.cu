@@ -223,17 +223,114 @@ void Boids::copyBoidsToVBO(float *vbodptr_positions, float *vbodptr_velocities) 
 * stepSimulation *
 ******************/
 
+#pragma region rule_1_3
+__device__ glm::vec3 rule_1(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
+    glm::vec3 perceived_center = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    int num_of_neighbors = 0;
+    for (int i = 0; i < N && i != iSelf; i++) {
+        if (glm::distance(pos[i], pos[iSelf]) < rule1Distance) {
+            num_of_neighbors++;
+            perceived_center += pos[i];
+        }
+    }
+
+    if (num_of_neighbors != 0) {
+        perceived_center /= (float)num_of_neighbors;
+    }
+
+    return (perceived_center - pos[iSelf]) * rule1Scale;
+}
+
+__device__ glm::vec3 rule_2(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
+    glm::vec3 out;
+
+    for (int i = 0; i < N && i != iSelf; i++)
+    {
+        if (glm::distance(pos[i], pos[iSelf]) < rule2Distance) {
+            out -= pos[i] - pos[iSelf];
+        }
+    }
+
+    return out * rule2Scale;
+}
+
+__device__ glm::vec3 rule_3(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
+    glm::vec3 out; // perceived_velocity
+    int num_of_neighbors = 0;
+    for (int i = 0; i < N && i != iSelf; i++) {
+        if (glm::distance(pos[i], pos[iSelf]) < rule3Distance) {
+            num_of_neighbors++;
+            out += vel[i];
+        }
+    }
+    out = num_of_neighbors != 0 ? (out / (float)num_of_neighbors) : out;
+    return out * rule3Scale;
+}
+
+#pragma endregion rule_1_3
+
 /**
 * LOOK-1.2 You can use this as a helper for kernUpdateVelocityBruteForce.
 * __device__ code can be called from a __global__ context
 * Compute the new velocity on the body with index `iSelf` due to the `N` boids
 * in the `pos` and `vel` arrays.
 */
+
 __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *pos, const glm::vec3 *vel) {
+    glm::vec3 out;
   // Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
   // Rule 2: boids try to stay a distance d away from each other
   // Rule 3: boids try to match the speed of surrounding boids
-  return glm::vec3(0.0f, 0.0f, 0.0f);
+    out += rule_1(N, iSelf, pos, vel);
+    out += rule_2(N, iSelf, pos, vel);
+    out += rule_3(N, iSelf, pos, vel);
+    return out;
+//    int numNeighborsRule1 = 0, numNeighborsRule3 = 0;
+//    glm::vec3
+//        posSelf = pos[iSelf],
+//        center(0.0f),
+//        repulsion(0.0f),
+//        velocity(0.0f);
+//    for (int i = 0; i < N; ++i) {
+//        if (i == iSelf) {
+//            continue;
+//        }
+//        glm::vec3 posCur = pos[i];
+//        glm::vec3 posDiff = posCur - posSelf;
+//        float sqrDist = glm::dot(posDiff, posDiff);
+//
+//        // Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
+//        if (sqrDist < rule1Distance * rule1Distance) {
+//            center += posCur;
+//            ++numNeighborsRule1;
+//        }
+//
+//        // Rule 2: boids try to stay a distance d away from each other
+//        if (sqrDist < rule2Distance * rule2Distance) {
+//            repulsion -= posDiff;
+//        }
+//
+//        // Rule 3: boids try to match the speed of surrounding boids
+//        if (sqrDist < rule3Distance * rule3Distance) {
+//            velocity += vel[i];
+//            ++numNeighborsRule3;
+//        }
+//    }
+//
+//    if (numNeighborsRule1 > 0) {
+//        center = (center / static_cast<float>(numNeighborsRule1) - posSelf) * rule1Scale;
+//    }
+//    repulsion *= rule2Scale;
+//    if (numNeighborsRule3 > 0) {
+//        velocity /= numNeighborsRule3;
+//#ifdef CORRECT_BOID_RULE3
+//        velocity -= vel[iSelf];
+//#endif
+//        velocity *= rule3Scale;
+//    }
+//    return center;
+    //return center + repulsion + velocity;
 }
 
 /**
@@ -242,9 +339,17 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
 */
 __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
   glm::vec3 *vel1, glm::vec3 *vel2) {
+    int index = threadIdx.x + (blockIdx.x * blockDim.x);
+    if (index >= N) {
+        return;
+    }
+
   // Compute a new velocity based on pos and vel1
+    glm::vec3 tmp_v = vel1[index] + computeVelocityChange(N, index, pos, vel1);
   // Clamp the speed
+    tmp_v = tmp_v.length() < maxSpeed ? tmp_v : glm::normalize(tmp_v) * maxSpeed;
   // Record the new velocity into vel2. Question: why NOT vel1?
+    vel2[index] = tmp_v;
 }
 
 /**
@@ -347,8 +452,12 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 * Step the entire N-body simulation by `dt` seconds.
 */
 void Boids::stepSimulationNaive(float dt) {
+    dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
   // TODO-1.2 - use the kernels you wrote to step the simulation forward in time.
+    kernUpdateVelocityBruteForce <<< fullBlocksPerGrid, blockSize >>> (numObjects, dev_pos, dev_vel1, dev_vel2);
+    kernUpdatePos << < fullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos, dev_vel2);
   // TODO-1.2 ping-pong the velocity buffers
+    std::swap(dev_vel1, dev_vel2);
 }
 
 void Boids::stepSimulationScatteredGrid(float dt) {
