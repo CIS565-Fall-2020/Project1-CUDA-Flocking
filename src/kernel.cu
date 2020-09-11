@@ -474,34 +474,46 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   // - Perform velocity updates using neighbor search
   // - Update positions
   // - Ping-pong buffers as needed
-    dim3 boidBlocks((numObjects + blockSize - 1) / blockSize);
-    dim3 cellBlocks((gridCellCount + blockSize - 1) / blockSize);
+  dim3 boidBlocks((numObjects + blockSize - 1) / blockSize);
+  dim3 cellBlocks((gridCellCount + blockSize - 1) / blockSize);
+  std::unique_ptr<int[]> host_particleArrayIndices { new int[numObjects] };
+  std::unique_ptr<int[]> host_particleGridIndices { new int[numObjects] };
+  std::unique_ptr<int[]> host_gridCellStartIndices {new int[gridCellCount] };
+  std::unique_ptr<int[]> host_gridCellEndIndices { new int[gridCellCount] };
+  std::unique_ptr<glm::vec3[]> host_pos { new glm::vec3[numObjects] };
+  std::unique_ptr<glm::vec3[]> host_vel2 { new glm::vec3[numObjects] };
+
+
+  kernResetIntBuffer<<<cellBlocks, blockSize>>>(gridCellCount, dev_gridCellStartIndices, numObjects);
+  checkCUDAErrorWithLine("kernResetIntBuffer failed");
+
+  kernResetIntBuffer<<<cellBlocks, blockSize>>>(gridCellCount, dev_gridCellEndIndices, 0);
+  checkCUDAErrorWithLine("kernResetIntBuffer failed");
+
+  kernComputeIndices<<<boidBlocks, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth,
+                      dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
+  checkCUDAErrorWithLine("kernComputeIndices failed");
+
+  thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects,
+    dev_thrust_particleArrayIndices);
   
-    kernResetIntBuffer<<<cellBlocks, blockSize>>>(gridCellCount, dev_gridCellStartIndices, numObjects);
-    checkCUDAErrorWithLine("kernResetIntBuffer failed");
+  cudaMemcpy(host_particleGridIndices.get(), dev_particleGridIndices, numObjects * sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(host_particleArrayIndices.get(), dev_particleArrayIndices, numObjects * sizeof(int), cudaMemcpyDeviceToHost);
 
-    kernResetIntBuffer<<<cellBlocks, blockSize>>>(gridCellCount, dev_gridCellEndIndices, 0);
-    checkCUDAErrorWithLine("kernResetIntBuffer failed");
+  kernIdentifyCellStartEnd<<<boidBlocks, blockSize>>>(numObjects, dev_particleGridIndices, 
+    dev_gridCellStartIndices, dev_gridCellEndIndices);
+  checkCUDAErrorWithLine("kernIdentifyCellStartEnd failed");
+  cudaMemcpy(host_gridCellStartIndices.get(), dev_gridCellStartIndices, gridCellCount * sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(host_gridCellEndIndices.get(), dev_gridCellEndIndices, gridCellCount * sizeof(int), cudaMemcpyDeviceToHost);
 
-    kernComputeIndices<<<boidBlocks, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth,
-                       dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
-    checkCUDAErrorWithLine("kernComputeIndices failed");
+  kernUpdateVelNeighborSearchScattered<<<boidBlocks, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
+    dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
+  checkCUDAErrorWithLine("kernUpdateVelNeighborSearchScattered failed");
 
-    thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects,
-      dev_thrust_particleArrayIndices);
+  kernUpdatePos<<<boidBlocks, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
+  checkCUDAErrorWithLine("kernUpdatePos failed");
 
-    kernIdentifyCellStartEnd<<<boidBlocks, blockSize>>>(numObjects, dev_particleGridIndices, 
-      dev_gridCellStartIndices, dev_gridCellEndIndices);
-    checkCUDAErrorWithLine("kernIdentifyCellStartEnd failed");
-
-    kernUpdateVelNeighborSearchScattered<<<boidBlocks, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
-      dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
-    checkCUDAErrorWithLine("kernUpdateVelNeighborSearchScattered failed");
-
-    kernUpdatePos<<<boidBlocks, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
-    checkCUDAErrorWithLine("kernUpdatePos failed");
-
-    cudaMemcpy(dev_vel1, dev_vel2, numObjects * sizeof(glm::vec3), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(dev_vel1, dev_vel2, numObjects * sizeof(glm::vec3), cudaMemcpyDeviceToDevice);
 }
 
 void Boids::stepSimulationCoherentGrid(float dt) {
