@@ -8,10 +8,14 @@ Project 1 - Flocking**
 
 ### My results:
 
- Naive Neighbor Search
+Naive Neighbor Search
 
 ![](images/naive.gif)
 
+Uniform grids
+
 ![](images/uniform_grid.gif)
+
+More coherent uniform grids
 
 ![](images/coherent_uniform_grid.gif)
