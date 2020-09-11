@@ -1,0 +1,180 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5416C792-71FB-38FA-8016-C68A6F7D064A}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>E:\Learning\CIS565\Project1-CUDA-Flocking\external\include;D:\cuda\dev\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>E:\Learning\CIS565\Project1-CUDA-Flocking\external\include;D:\cuda\dev\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>E:\Learning\CIS565\Project1-CUDA-Flocking\external\include;D:\cuda\dev\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>E:\Learning\CIS565\Project1-CUDA-Flocking\external\include;D:\cuda\dev\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\Learning\CIS565\Project1-CUDA-Flocking\CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule E:/Learning/CIS565/Project1-CUDA-Flocking/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+E:\Learning\cmake-3.17.2-win64-x64\bin\cmake.exe -SE:/Learning/CIS565/Project1-CUDA-Flocking -BE:/Learning/CIS565/Project1-CUDA-Flocking/build --check-stamp-file E:/Learning/CIS565/Project1-CUDA-Flocking/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeCCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeCXXCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeRCCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeSystem.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\cis565_boids.dir\src\cis565_boids_generated_kernel.cu.obj.cmake.pre-gen;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\cis565_boids.dir\src\cis565_boids_generated_kernel.cu.obj.depend;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\CUDAComputesList.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLEW.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLFW.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLM.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\cuda_compute_capability.cpp;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCXXInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCommonLanguageInclude.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeGenericSystem.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeInitializeConfigs.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeLanguageInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeRCInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeSystemSpecificInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeSystemSpecificInitialize.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\CMakeCommonCompilerMacros.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\MSVC-C.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\MSVC-CXX.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA\run_nvcc.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA\select_compute_arch.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindOpenGL.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindPackageHandleStandardArgs.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindPackageMessage.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC-C.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC-CXX.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\WindowsPaths.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule E:/Learning/CIS565/Project1-CUDA-Flocking/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+E:\Learning\cmake-3.17.2-win64-x64\bin\cmake.exe -SE:/Learning/CIS565/Project1-CUDA-Flocking -BE:/Learning/CIS565/Project1-CUDA-Flocking/build --check-stamp-file E:/Learning/CIS565/Project1-CUDA-Flocking/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeCCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeCXXCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeRCCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeSystem.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\cis565_boids.dir\src\cis565_boids_generated_kernel.cu.obj.cmake.pre-gen;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\cis565_boids.dir\src\cis565_boids_generated_kernel.cu.obj.depend;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\CUDAComputesList.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLEW.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLFW.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLM.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\cuda_compute_capability.cpp;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCXXInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCommonLanguageInclude.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeGenericSystem.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeInitializeConfigs.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeLanguageInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeRCInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeSystemSpecificInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeSystemSpecificInitialize.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\CMakeCommonCompilerMacros.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\MSVC-C.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\MSVC-CXX.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA\run_nvcc.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA\select_compute_arch.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindOpenGL.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindPackageHandleStandardArgs.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindPackageMessage.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC-C.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC-CXX.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\WindowsPaths.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule E:/Learning/CIS565/Project1-CUDA-Flocking/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+E:\Learning\cmake-3.17.2-win64-x64\bin\cmake.exe -SE:/Learning/CIS565/Project1-CUDA-Flocking -BE:/Learning/CIS565/Project1-CUDA-Flocking/build --check-stamp-file E:/Learning/CIS565/Project1-CUDA-Flocking/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeCCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeCXXCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeRCCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeSystem.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\cis565_boids.dir\src\cis565_boids_generated_kernel.cu.obj.cmake.pre-gen;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\cis565_boids.dir\src\cis565_boids_generated_kernel.cu.obj.depend;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\CUDAComputesList.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLEW.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLFW.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLM.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\cuda_compute_capability.cpp;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCXXInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCommonLanguageInclude.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeGenericSystem.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeInitializeConfigs.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeLanguageInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeRCInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeSystemSpecificInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeSystemSpecificInitialize.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\CMakeCommonCompilerMacros.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\MSVC-C.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\MSVC-CXX.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA\run_nvcc.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA\select_compute_arch.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindOpenGL.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindPackageHandleStandardArgs.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindPackageMessage.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC-C.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC-CXX.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\WindowsPaths.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule E:/Learning/CIS565/Project1-CUDA-Flocking/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+E:\Learning\cmake-3.17.2-win64-x64\bin\cmake.exe -SE:/Learning/CIS565/Project1-CUDA-Flocking -BE:/Learning/CIS565/Project1-CUDA-Flocking/build --check-stamp-file E:/Learning/CIS565/Project1-CUDA-Flocking/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeCCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeCXXCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeRCCompiler.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\3.17.2\CMakeSystem.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\cis565_boids.dir\src\cis565_boids_generated_kernel.cu.obj.cmake.pre-gen;E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\cis565_boids.dir\src\cis565_boids_generated_kernel.cu.obj.depend;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\CUDAComputesList.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLEW.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLFW.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\FindGLM.cmake;E:\Learning\CIS565\Project1-CUDA-Flocking\cmake\cuda_compute_capability.cpp;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCXXInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeCommonLanguageInclude.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeGenericSystem.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeInitializeConfigs.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeLanguageInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeRCInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeSystemSpecificInformation.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\CMakeSystemSpecificInitialize.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\CMakeCommonCompilerMacros.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\MSVC-C.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Compiler\MSVC-CXX.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA\run_nvcc.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindCUDA\select_compute_arch.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindOpenGL.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindPackageHandleStandardArgs.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\FindPackageMessage.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC-C.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC-CXX.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows-MSVC.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\Windows.cmake;E:\Learning\cmake-3.17.2-win64-x64\share\cmake-3.17\Modules\Platform\WindowsPaths.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">E:\Learning\CIS565\Project1-CUDA-Flocking\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="E:\Learning\CIS565\Project1-CUDA-Flocking\build\ZERO_CHECK.vcxproj">
+      <Project>{D758D8ED-1D37-3D50-AE83-95FD00F1BEB7}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="E:\Learning\CIS565\Project1-CUDA-Flocking\build\cis565_boids.vcxproj">
+      <Project>{8EE54C74-8E23-328E-9125-414FC2BBC7A0}</Project>
+      <Name>cis565_boids</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
