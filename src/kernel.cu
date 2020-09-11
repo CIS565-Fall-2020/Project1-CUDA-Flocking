@@ -241,7 +241,7 @@ __device__ glm::vec3 rule_1(const int& N, const int& iSelf, const glm::vec3* pos
         perceived_center = (perceived_center - pos[iSelf]) * rule1Scale;
     }
     else {
-        // the tricky part is the follow line
+        // the tricky part is this line
         perceived_center = glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
@@ -293,51 +293,7 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
     out += rule_2(N, iSelf, pos, vel);
     out += rule_3(N, iSelf, pos, vel);
     return out;
-//    int numNeighborsRule1 = 0, numNeighborsRule3 = 0;
-//    glm::vec3
-//        posSelf = pos[iSelf],
-//        center(0.0f),
-//        repulsion(0.0f),
-//        velocity(0.0f);
-//    for (int i = 0; i < N; ++i) {
-//        if (i == iSelf) {
-//            continue;
-//        }
-//        glm::vec3 posCur = pos[i];
-//        glm::vec3 posDiff = posCur - posSelf;
-//        float sqrDist = glm::dot(posDiff, posDiff);
-//
-//        // Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
-//        if (sqrDist < rule1Distance * rule1Distance) {
-//            center += posCur;
-//            ++numNeighborsRule1;
-//        }
-//
-//        // Rule 2: boids try to stay a distance d away from each other
-//        if (sqrDist < rule2Distance * rule2Distance) {
-//            repulsion -= posDiff;
-//        }
-//
-//        // Rule 3: boids try to match the speed of surrounding boids
-//        if (sqrDist < rule3Distance * rule3Distance) {
-//            velocity += vel[i];
-//            ++numNeighborsRule3;
-//        }
-//    }
-//
-//    if (numNeighborsRule1 > 0) {
-//        center = (center / static_cast<float>(numNeighborsRule1) - posSelf) * rule1Scale;
-//    }
-//    repulsion *= rule2Scale;
-//    if (numNeighborsRule3 > 0) {
-//        velocity /= numNeighborsRule3;
-//#ifdef CORRECT_BOID_RULE3
-//        velocity -= vel[iSelf];
-//#endif
-//        velocity *= rule3Scale;
-//    }
-//    return repulsion + velocity;
-    //return center + repulsion + velocity;
+
 }
 
 /**
