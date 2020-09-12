@@ -278,29 +278,25 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
           perceivedCenter += pos[b];
           numNeighbor1++;
       }
-      /*
      
-      if (dist < rule2Distance) {
+      if (dist2 < rule2d2) {
           rule2C -= (pos[b] - curP);
       }
-      if (dist < rule3Distance) {
+      if (dist2 < rule3d2) {
           perceivedVel += vel[b];
           numNeighbor3++;
       }
-      */
   }
   glm::vec3 deltaV = glm::vec3(0.f);
   if (numNeighbor1 > 0) {
     perceivedCenter /= numNeighbor1;
     deltaV += (perceivedCenter - curP) * rule1Scale;
   }
-  /*
   deltaV += rule2C * rule2Scale;
-  if (numNeighbor3 != 0) {
+  if (numNeighbor3 > 0) {
     perceivedVel /= numNeighbor3;
     deltaV += perceivedVel * rule3Scale;
   }
-  */
   return deltaV;
 }
 
@@ -480,7 +476,6 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 */
 void Boids::stepSimulationNaive(float dt) {
     dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
-
     kernUpdateVelocityBruteForce<<<fullBlocksPerGrid, blockSize>>>(numObjects, dev_pos, dev_vel1, dev_vel2);
     checkCUDAErrorWithLine("kernUpdateVelocityBruteForce failed");
 
