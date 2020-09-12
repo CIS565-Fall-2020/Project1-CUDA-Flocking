@@ -250,7 +250,10 @@ __device__ glm::vec3 naive_rule_1(const int& N, const int& iSelf, const glm::vec
     glm::vec3 perceived_center = glm::vec3(0.0f, 0.0f, 0.0f);
 
     int num_of_neighbors = 0;
-    for (int i = 0; i < N && i != iSelf; i++) {
+    for (int i = 0; i < N; i++) {
+        if (i == iSelf) {
+            continue;
+        }
         if (glm::length(pos[i] - pos[iSelf]) < rule1Distance) {
             num_of_neighbors++;
             perceived_center += pos[i];
@@ -274,8 +277,11 @@ __device__ glm::vec3 naive_rule_1(const int& N, const int& iSelf, const glm::vec
 __device__ glm::vec3 naive_rule_2(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
     glm::vec3 out;
 
-    for (int i = 0; i < N && i != iSelf; i++)
+    for (int i = 0; i < N; i++)
     {
+        if (i == iSelf) {
+            continue;
+        }
         if (glm::distance(pos[i], pos[iSelf]) < rule2Distance) {
             out -= pos[i] - pos[iSelf];
         }
@@ -287,7 +293,10 @@ __device__ glm::vec3 naive_rule_2(const int& N, const int& iSelf, const glm::vec
 __device__ glm::vec3 naive_rule_3(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
     glm::vec3 out; // perceived_velocity
     int num_of_neighbors = 0;
-    for (int i = 0; i < N && i != iSelf; i++) {
+    for (int i = 0; i < N; i++) {
+        if (i == iSelf) {
+            continue;
+        }
         if (glm::distance(pos[i], pos[iSelf]) < rule3Distance) {
             num_of_neighbors++;
             out += vel[i];
@@ -452,8 +461,8 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // - Identify the grid cell that this particle is in
     glm::ivec3 cur_cell_idx = ( cur_pos - gridMin ) * inverseCellWidth;
   // - Identify which cells may contain neighbors. This isn't always 8.
-    glm::ivec3 min_cell_idx = (cur_pos - maxSearchRange - gridMin) * inverseCellWidth;
-    glm::ivec3 max_cell_idx = (cur_pos + maxSearchRange - gridMin) * inverseCellWidth;
+    glm::ivec3 min_cell_idx = glm::floor( (cur_pos - maxSearchRange - gridMin) * inverseCellWidth);
+    glm::ivec3 max_cell_idx = glm::ceil( (cur_pos + maxSearchRange - gridMin) * inverseCellWidth );
     // clamp for safety
     min_cell_idx = glm::clamp(min_cell_idx, glm::ivec3(0), glm::ivec3(gridResolution - 1));
     max_cell_idx = glm::clamp(max_cell_idx, glm::ivec3(0), glm::ivec3(gridResolution - 1));
@@ -465,10 +474,19 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     glm::vec3 tmp1(0.0f);
     glm::vec3 tmp2(0.0f);
     glm::vec3 tmp3(0.0f);
+    // debug
+    /*glm::vec3 t1 = (cur_pos - maxSearchRange - gridMin) * inverseCellWidth;
+    glm::vec3 t2 = (cur_pos + maxSearchRange - gridMin) * inverseCellWidth;
 
-    for (int ix = min_cell_idx.x; ix <= max_cell_idx.x; ix++) {
+    float3 temp1 = make_float3(t1.x, t1.y, t1.z);
+    float3 temp2 = make_float3(t2.x, t2.y, t2.z);
+
+    glm::ivec3 tmp_vec = (max_cell_idx - min_cell_idx) + 1;
+    int loopcellnum = tmp_vec.x * tmp_vec.y * tmp_vec.z;*/
+    // loop z first
+    for (int iz = min_cell_idx.z; iz <= max_cell_idx.z; iz++) {
         for (int iy = min_cell_idx.y; iy <= max_cell_idx.y; iy++) {
-            for (int iz = min_cell_idx.z; iz <= max_cell_idx.z; iz++) {
+            for (int ix = min_cell_idx.x; ix <= max_cell_idx.x; ix++) {
                 int cell_idx = gridIndex3Dto1D(ix, iy, iz, gridResolution);
                 // - Access each boid in the cell and compute velocity change from
                 //   the boids rules, if this boid is within the neighborhood distance.
