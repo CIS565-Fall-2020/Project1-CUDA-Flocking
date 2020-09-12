@@ -284,11 +284,13 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
   }
   glm::vec3 deltaV = glm::vec3(0.f);
   if (numNeighbor1 != 0) {
-    deltaV += (perceivedCenter / numNeighbor1 - curP) * rule1Scale;
+    perceivedCenter /= numNeighbor1;
+    deltaV += (perceivedCenter - curP) * rule1Scale;
   }
   deltaV += rule2C * rule2Scale;
   if (numNeighbor3 != 0) {
-    deltaV += perceivedVel / numNeighbor3;
+    perceivedVel /= numNeighbor3;
+    deltaV += perceivedVel rule3Scale;
   }
   return deltaV;
 }
