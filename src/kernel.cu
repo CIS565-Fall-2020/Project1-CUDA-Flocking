@@ -254,7 +254,7 @@ __device__ glm::vec3 naive_rule_1(const int& N, const int& iSelf, const glm::vec
         if (i == iSelf) {
             continue;
         }
-        if (glm::length(pos[i] - pos[iSelf]) < rule1Distance) {
+        if (glm::distance(pos[i], pos[iSelf]) < rule1Distance) {
             num_of_neighbors++;
             perceived_center += pos[i];
         }
@@ -462,7 +462,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     glm::ivec3 cur_cell_idx = ( cur_pos - gridMin ) * inverseCellWidth;
   // - Identify which cells may contain neighbors. This isn't always 8.
     glm::ivec3 min_cell_idx = glm::floor( (cur_pos - maxSearchRange - gridMin) * inverseCellWidth);
-    glm::ivec3 max_cell_idx = glm::ceil( (cur_pos + maxSearchRange - gridMin) * inverseCellWidth );
+    glm::ivec3 max_cell_idx = glm::floor( (cur_pos + maxSearchRange - gridMin) * inverseCellWidth );
     // clamp for safety
     min_cell_idx = glm::clamp(min_cell_idx, glm::ivec3(0), glm::ivec3(gridResolution - 1));
     max_cell_idx = glm::clamp(max_cell_idx, glm::ivec3(0), glm::ivec3(gridResolution - 1));
@@ -482,6 +482,8 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     float3 temp2 = make_float3(t2.x, t2.y, t2.z);
 
     glm::ivec3 tmp_vec = (max_cell_idx - min_cell_idx) + 1;
+    float3 temp_vec = make_float3(tmp_vec.x, tmp_vec.y, tmp_vec.z);
+
     int loopcellnum = tmp_vec.x * tmp_vec.y * tmp_vec.z;*/
     // loop z first
     for (int iz = min_cell_idx.z; iz <= max_cell_idx.z; iz++) {
