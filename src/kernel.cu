@@ -239,7 +239,9 @@ void Boids::copyBoidsToVBO(float *vbodptr_positions, float *vbodptr_velocities) 
 ******************/
 
 __device__ float calcDist(const glm::vec3 p1, const glm::vec3 p2) {
-    return glm::length(p1 - p2);
+    return sqrt((p1.x - p2.x) * (p1.x - p2.x) +
+                (p1.y - p2.y) * (p1.y - p2.y) +
+                (p1.z - p2.z) * (p1.z - p2.z));
 }
 
 __device__ glm::vec3 clamp(glm::vec3 v, float lo, float hi) {
@@ -262,8 +264,8 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
   // Rule 3: boids try to match the speed of surrounding boids
   glm::vec3 perceivedCenter = glm::vec3(0.f);
   glm::vec3 perceivedVel = glm::vec3(0.f);
-  int numNeighbor1 = 0, numNeighbor3 = 0;
   glm::vec3 rule2C = glm::vec3(0.f);
+  int numNeighbor1 = 0, numNeighbor3 = 0;
   glm::vec3 curP = pos[iSelf];
   for (int b = 0; b < N; b++) {
       if (b == iSelf) continue;
@@ -273,16 +275,22 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
           numNeighbor1++;
       }
       if (dist < rule2Distance) {
-          rule2C -= (curP - pos[b]);
+          rule2C -= (pos[b] - curP);
       }
       if (dist < rule3Distance) {
           perceivedVel += vel[b];
           numNeighbor3++;
       }
   }
-  if (numNeighbor1 != 0) perceivedCenter /= numNeighbor1;
-  if (numNeighbor3 != 0) perceivedVel /= numNeighbor3;
-  return (perceivedCenter - curP) * rule1Scale + rule2C * rule2Scale + perceivedVel * rule3Scale;
+  glm::vec3 deltaV = glm::vec3(0.f);
+  if (numNeighbor1 != 0) {
+    deltaV += (perceivedCenter / numNeighbor1 - curP) * rule1Scale;
+  }
+  deltaV += rule2C * rule2Scale;
+  if (numNeighbor3 != 0) {
+    deltaV += perceivedVel / numNeighbor3;
+  }
+  return deltaV;
 }
 
 __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
@@ -334,17 +342,17 @@ __device__ int gridIndex3Dto1D(int x, int y, int z, int gridResolution) {
 __global__ void kernComputeIndices(int N, int gridResolution,
   glm::vec3 gridMin, float inverseCellWidth,
   glm::vec3 *pos, int *indices, int *gridIndices) {
-    // TODO-2.1
-    // - Label each boid with the index of its grid cell.
-    // - Set up a parallel array of integer indices as pointers to the actual
-    //   boid data in pos and vel1/vel2
-    int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if (idx >= N) return;
-    indices[idx] = idx;
-    int posX = floor((pos[idx].x - gridMin.x) * inverseCellWidth);
-    int posY = floor((pos[idx].y - gridMin.y) * inverseCellWidth);
-    int posZ = floor((pos[idx].z - gridMin.z) * inverseCellWidth);
-    gridIndices[idx] = gridIndex3Dto1D(posX, posY, posZ, gridResolution);
+  // TODO-2.1
+  // - Label each boid with the index of its grid cell.
+  // - Set up a parallel array of integer indices as pointers to the actual
+  //   boid data in pos and vel1/vel2
+  int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+  if (idx >= N) return;
+  indices[idx] = idx;
+  int posX = floor((pos[idx].x - gridMin.x) * inverseCellWidth);
+  int posY = floor((pos[idx].y - gridMin.y) * inverseCellWidth);
+  int posZ = floor((pos[idx].z - gridMin.z) * inverseCellWidth);
+  gridIndices[idx] = gridIndex3Dto1D(posX, posY, posZ, gridResolution);
 }
 
 // LOOK-2.1 Consider how this could be useful for indicating that a cell
@@ -411,6 +419,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
     for (int j = sIdx; j <= eIdx; j++) {
       int b = particleArrayIndices[j];
+      if (b == idx) continue;
       glm::vec3 nPos = pos[b];
       float dist = calcDist(curPos, nPos);
       if (dist < rule1Distance) {
@@ -426,7 +435,11 @@ __global__ void kernUpdateVelNeighborSearchScattered(
       }
     }
   }
-  if (numNeighbor1 != 0) perceivedCenter /= numNeighbor1;
+  if (numNeighbor1 != 0) {
+    perceivedCenter /= numNeighbor1;
+  } else {
+    perceivedCenter = curPos;
+  }
   if (numNeighbor3 != 0) perceivedVel /= numNeighbor3;
   glm::vec3 newVel = vel1[idx] + (perceivedCenter - curPos) * rule1Scale + rule2C * rule2Scale + perceivedVel * rule3Scale;
   vel2[idx] = clamp(newVel, -maxSpeed, maxSpeed);
