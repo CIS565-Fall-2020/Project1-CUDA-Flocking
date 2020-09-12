@@ -239,8 +239,8 @@ void Boids::copyBoidsToVBO(float *vbodptr_positions, float *vbodptr_velocities) 
 * stepSimulation *
 ******************/
 
-#pragma region rule_1_3
-__device__ glm::vec3 rule_1(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
+#pragma region naive_rule_1_3
+__device__ glm::vec3 naive_rule_1(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
     glm::vec3 perceived_center = glm::vec3(0.0f, 0.0f, 0.0f);
 
     int num_of_neighbors = 0;
@@ -265,7 +265,7 @@ __device__ glm::vec3 rule_1(const int& N, const int& iSelf, const glm::vec3* pos
     return perceived_center;
 }
 
-__device__ glm::vec3 rule_2(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
+__device__ glm::vec3 naive_rule_2(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
     glm::vec3 out;
 
     for (int i = 0; i < N && i != iSelf; i++)
@@ -278,7 +278,7 @@ __device__ glm::vec3 rule_2(const int& N, const int& iSelf, const glm::vec3* pos
     return out * rule2Scale;
 }
 
-__device__ glm::vec3 rule_3(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
+__device__ glm::vec3 naive_rule_3(const int& N, const int& iSelf, const glm::vec3* pos, const glm::vec3* vel) {
     glm::vec3 out; // perceived_velocity
     int num_of_neighbors = 0;
     for (int i = 0; i < N && i != iSelf; i++) {
@@ -291,7 +291,7 @@ __device__ glm::vec3 rule_3(const int& N, const int& iSelf, const glm::vec3* pos
     return out * rule3Scale;
 }
 
-#pragma endregion rule_1_3
+#pragma endregion naive_rule_1_3
 
 /**
 * LOOK-1.2 You can use this as a helper for kernUpdateVelocityBruteForce.
@@ -305,9 +305,9 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
   // Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
   // Rule 2: boids try to stay a distance d away from each other
   // Rule 3: boids try to match the speed of surrounding boids
-    out += rule_1(N, iSelf, pos, vel);
-    out += rule_2(N, iSelf, pos, vel);
-    out += rule_3(N, iSelf, pos, vel);
+    out += naive_rule_1(N, iSelf, pos, vel);
+    out += naive_rule_2(N, iSelf, pos, vel);
+    out += naive_rule_3(N, iSelf, pos, vel);
     return out;
 
 }
@@ -407,7 +407,21 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
         return;
     }
 
+    int prv_index = (index + N - 1) % N; // if index == 0, get N - 1
+    int nxt_index = (index + N + 1) % N;
 
+    int grid_index = particleGridIndices[index];
+    int grid_prv_index = particleGridIndices[prv_index];
+    int grid_nxt_index = particleGridIndices[nxt_index];
+
+    /*if (grid_index == grid_prv_index) {
+        gridCellStartIndices[grid_index] = index;
+    }*/
+    gridCellStartIndices[grid_index] = (grid_index != grid_prv_index) ? index : -1;
+   /* if (grid_index == grid_nxt_index) {
+        gridCellEndIndices[grid_index] = index;
+    }*/
+    gridCellEndIndices[grid_index] = (grid_index != grid_nxt_index) ? index : -1;
 }
 
 __global__ void kernUpdateVelNeighborSearchScattered(
