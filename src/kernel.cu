@@ -246,10 +246,28 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
   glm::vec3 velChange1(0.0f, 0.0f, 0.0f);
   glm::vec3 perceivedCenter(0.0f, 0.0f, 0.0f);
   int numNeighbors1 = 0;
+
+  // Rule 2: boids try to stay a distance d away from each other
+  glm::vec3 velChange2(0.0f, 0.0f, 0.0f);
+
+  // Rule 3: boids try to match the speed of surrounding boids
+  glm::vec3 velChange3(0.0f, 0.0f, 0.0f);
+  glm::vec3 perceivedVel(0.0f, 0.0f, 0.0f);
+  int numNeighbors3 = 0;
+
+  // Loop to find and take into account neihgbors for all rule 1, 2, 3
   for (int i = 0; i < N; i++) {
-    if (i != iSelf && glm::distance(pos[i], pos[iSelf]) < rule1Distance) {
+    float dist = glm::distance(pos[i], pos[iSelf]);
+    if (i != iSelf && dist < rule1Distance) {
       perceivedCenter += pos[i];
       numNeighbors1++;
+    }
+    if (i != iSelf && dist < rule2Distance) {
+      velChange2 -= (pos[i] - pos[iSelf]);
+    }
+    if (i != iSelf && dist < rule3Distance) {
+      perceivedVel += vel[i];
+      numNeighbors3++;
     }
   }
   if (numNeighbors1 > 0)
@@ -258,25 +276,8 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
     velChange1 = (perceivedCenter - pos[iSelf]) * rule1Scale;
   }
 
-  // Rule 2: boids try to stay a distance d away from each other
-  glm::vec3 velChange2(0.0f, 0.0f, 0.0f);
-  for (int i = 0; i < N; i++) {
-    if (i != iSelf && glm::distance(pos[i], pos[iSelf]) < rule2Distance) {
-      velChange2 -= (pos[i] - pos[iSelf]);
-    }
-  }
   velChange2 *= rule2Scale;
-
-  // Rule 3: boids try to match the speed of surrounding boids
-  glm::vec3 velChange3(0.0f, 0.0f, 0.0f);
-  glm::vec3 perceivedVel(0.0f, 0.0f, 0.0f);
-  int numNeighbors3 = 0;
-  for (int i = 0; i < N; i++) {
-    if (i != iSelf && glm::distance(pos[i], pos[iSelf]) < rule3Distance) {
-      perceivedVel += vel[i];
-      numNeighbors3++;
-    }
-  }
+  
   if (numNeighbors3 > 0)
   {
     perceivedVel /= numNeighbors3;
@@ -416,7 +417,8 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   {
     return;
   }
-  glm::vec3 boidGridCell = inverseCellWidth * (pos[boidIndex] - gridMin); // might not be rounded/aka integer
+  glm::vec3 boidPos = pos[boidIndex];
+  glm::vec3 boidGridCell = inverseCellWidth * (boidPos - gridMin); // might not be rounded/aka integer
   glm::vec3 boidGridCellFloor = glm::floor(boidGridCell); // must be rounded/aka integer
   // The two below has each component within [-1, 1] as integers. Basically tells 
   // the range relative to the current boid cell that neighbors might be in
@@ -429,31 +431,42 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   if (boidGridCellFloor.y < gridResolution - 1 && glm::fract(boidGridCell.y) > 0.5f) maxCell.y = 1;
   if (boidGridCellFloor.z < gridResolution - 1 && glm::fract(boidGridCell.z) > 0.5f) maxCell.z = 1 ;
   
-  // velocity change due to each rule
-  glm::vec3 velChange1(0.0f, 0.0f, 0.0f); // boids try to fly towards center of mass of neighboring boids
-  glm::vec3 velChange2(0.0f, 0.0f, 0.0f); // boids try to keep a small distance away from other objects/boid
-  glm::vec3 velChange3(0.0f, 0.0f, 0.0f); // boids try to match velocity with nearby boids
+  // Velocity change due to each rule
+  // Boids try to fly towards center of mass of neighboring boids
+  glm::vec3 velChange1(0.0f, 0.0f, 0.0f); 
+  glm::vec3 perceivedCenter(0.0f, 0.0f, 0.0f);
   int numNeighbors1 = 0;
+  // Boids try to keep a small distance away from other objects/boid
+  glm::vec3 velChange2(0.0f, 0.0f, 0.0f);
+  // Boids try to match velocity with nearby boids
+  glm::vec3 velChange3(0.0f, 0.0f, 0.0f); 
+  glm::vec3 perceivedVel(0.0f, 0.0f, 0.0f);
   int numNeighbors3 = 0;
+
+  float gridMinX = gridMin.x; //d
+  float gridMinY = gridMin.y; //d
+  float gridMinZ = gridMin.z; //d
   
-  for (int i = minCell.x + boidGridCellFloor.x; i < maxCell.x + boidGridCellFloor.x; i++) {
-    for (int j = minCell.y + boidGridCellFloor.y; j < maxCell.y + boidGridCellFloor.y; j++) {
-      for (int k = minCell.z + boidGridCellFloor.z; k < maxCell.z + boidGridCellFloor.z; k++) {
-        int curCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
-        if (gridCellStartIndices[curCellIndex] > -1) {
-          for (int b = gridCellStartIndices[curCellIndex]; b <= gridCellEndIndices[curCellIndex]; b++) {
+  for (int i = minCell.x + boidGridCellFloor.x; i <= maxCell.x + boidGridCellFloor.x; i++) {
+    for (int j = minCell.y + boidGridCellFloor.y; j <= maxCell.y + boidGridCellFloor.y; j++) {
+      for (int k = minCell.z + boidGridCellFloor.z; k <= maxCell.z + boidGridCellFloor.z; k++) {
+        int boidBCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
+        if (gridCellStartIndices[boidBCellIndex] > -1) {
+          for (int b = gridCellStartIndices[boidBCellIndex]; b <= gridCellEndIndices[boidBCellIndex]; b++) {
             int boidBIndex = particleArrayIndices[b]; // index of pos, vel1 or vel2 of a neighbor boid
+            glm::vec3 boidBPos = pos[boidBIndex];
+            glm::vec3 boidBVel = vel1[boidBIndex];
             if (boidBIndex != boidIndex) {
-              float dist = glm::distance(pos[boidBIndex], pos[boidIndex]);
+              float dist = glm::distance(boidBPos, boidPos);
               if (dist < rule1Distance) {
                 // Technically, we are finding the perceived center for this point (will be averaged out later, then scale to turn into velocity)
-                velChange1 += pos[boidBIndex];
+                perceivedCenter += boidBPos;
                 numNeighbors1++;
               }
-              if (dist < rule2Distance) velChange2 -= (pos[boidBIndex] - pos[boidIndex]);
+              if (dist < rule2Distance) velChange2 -= (boidBPos - boidPos);
               if (dist < rule3Distance) {
                 // Technically, we are finding the perceived velocity for this point (will be averaged out later, then scale to turn into correct velocity)
-                velChange3 += vel1[boidBIndex];
+                perceivedVel += boidBVel;
                 numNeighbors3++;
               }
             }
@@ -465,15 +478,20 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
   // Finalize velocity change from rule 1, 2 and 3
   if (numNeighbors1 > 0) {
-    velChange1 /= numNeighbors1;
-    velChange1 = (velChange1  - pos[boidIndex]) * rule1Scale;
+    perceivedCenter /= numNeighbors1;
+    velChange1 = (perceivedCenter - boidPos) * rule1Scale;
   }
   velChange2 *= rule2Scale;
   if (numNeighbors3 > 0) {
-    velChange3 /= numNeighbors3;
-    velChange3 *= rule3Scale;
+    perceivedVel /= numNeighbors3;
+    velChange3 = perceivedVel * rule3Scale;
   }
   vel2[boidIndex] = vel1[boidIndex] + velChange1 + velChange2 + velChange3;
+  // Clamp the speed
+  float speed = glm::length(vel2[boidIndex]);
+  if (speed > maxSpeed) {
+    vel2[boidIndex] = maxSpeed * glm::normalize(vel2[boidIndex]);
+  }
 }
 
 __global__ void kernUpdateVelNeighborSearchCoherent(
