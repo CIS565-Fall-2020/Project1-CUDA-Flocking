@@ -61,6 +61,6 @@ This could because the relative differences of loop times is bigger when we have
 
 ### Extra Credit: Grid-Looping Optimization
 
-![](./images/Radius Search.png)
+![](./images/Radius%20Search.png)
 
 I implemented radius search in uniform grid method and final result is really impressive! It boost a lot from original method!
