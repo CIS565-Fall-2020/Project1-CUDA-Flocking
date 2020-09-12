@@ -36,8 +36,10 @@ const float fovy = (float) (PI / 4);
 const float zNear = 0.10f;
 const float zFar = 10.0f;
 // LOOK-1.2: for high DPI displays, you may want to double these settings.
-int width = 2560;
-int height = 1440;
+int width = 3840;
+int height = 2160;
+//int width = 2560;
+//int height = 1440;
 int pointSize = 4;
 
 // For camera controls
