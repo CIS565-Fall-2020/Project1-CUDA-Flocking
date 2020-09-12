@@ -281,7 +281,7 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
   }
   if (neighborCount > 0) {
     perceivedCenter /= neighborCount;
-    //cohesion /= neighborCount;
+    cohesion /= neighborCount;
     thisVel += (perceivedCenter - thisPos) * rule1Scale;
     thisVel += cohesion * rule3Scale;
   }
@@ -454,8 +454,12 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   for (int i = -1; i <= 1; i += 2) {
     for (int j = -1; j <= 1; j += 2) {
       for (int k = -1; k <= 1; k += 2) {
-        glm::vec3 offset = glm::vec3(i * 0.5 * cellWidth);
+        glm::vec3 offset = glm::vec3(i * 0.5 * cellWidth,
+          j * 0.5 * cellWidth,
+          k * 0.5 * cellWidth);
         glm::vec3 gridSpacePos = roundPos - gridMin + offset;
+        //glm::vec3 offset = glm::vec3(i * 0.5 * cellWidth);
+        //glm::vec3 gridSpacePos = roundPos - gridMin + offset;
         if (gridSpacePos.x > sideLength || gridSpacePos.x < 0.0f ||
           gridSpacePos.y > sideLength || gridSpacePos.y < 0.0f ||
           gridSpacePos.z > sideLength || gridSpacePos.z < 0.0f) {
@@ -531,7 +535,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
   if (neighborCount > 0) {
     perceivedCenter /= neighborCount;
-    //cohesion /= neighborCount;
+    cohesion /= neighborCount;
     thisVel += (perceivedCenter - thisPos) * rule1Scale;
     thisVel += cohesion * rule3Scale;
   }
