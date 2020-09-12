@@ -375,8 +375,8 @@ __global__ void kernResetIntBuffer(int N, int *intBuffer, int value) {
   }
 }
 
-__global__ void kernReshuffleParticleArray(int N, int *key, glm::vec3 *posArray, glm::vec3 *posArrayTemp, glm::vec3 *velArray, glm::vec3 *velArrayTemp) {
-  int index = (blockIdx.x * blockDIm.x) + threadIdx.x;
+__global__ void kernReshuffleParticleArray(int N, int *key, glm::vec3 *posArray, glm::vec3 *posArrayTemp, glm::vec3 *velArray, glm::vec3 *velArrayTemp) {
+  int index = (blockIdx.x * blockDim.x) + threadIdx.x;
   if (index >= N) return;
   posArray[index] = posArrayTemp[key[index]];
   velArray[index] = velArrayTemp[key[index]];
@@ -635,7 +635,7 @@ void Boids::stepSimulationCoherentGrid(float dt) {
   //   the particle data in the simulation array.
   //   CONSIDER WHAT ADDITIONAL BUFFERS YOU NEED
   cudaMemcpy(dev_pos2, dev_pos, sizeof(glm::vec3) * numObjects, cudaMemcpyDeviceToDevice);
-  kernReshuffleParticleArray(numObjects, dev_particleArrayIndices, dev_pos, dev_pos2, dev_vel1, dev_vel2);
+  kernReshuffleParticleArray<<<boidBlocks, blockSize>>>(numObjects, dev_particleArrayIndices, dev_pos, dev_pos2, dev_vel1, dev_vel2);
   checkCUDAErrorWithLine("kernReshuffleParticleArray failed");
 
   // - Perform velocity updates using neighbor search
@@ -652,7 +652,7 @@ void Boids::endSimulation() {
   cudaFree(dev_vel1);
   cudaFree(dev_vel2);
   cudaFree(dev_pos);
-  cudaFree(dev_pos2)
+  cudaFree(dev_pos2);
   cudaFree(dev_particleArrayIndices);
   cudaFree(dev_particleGridIndices);
   cudaFree(dev_gridCellStartIndices);
