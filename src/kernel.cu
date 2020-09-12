@@ -110,6 +110,9 @@ float gridCellWidth;
 float gridInverseCellWidth;
 glm::vec3 gridMinimum;
 
+// Performance measuring
+cudaEvent_t start, stop;
+
 /******************
 * initSimulation *
 ******************/
@@ -206,6 +209,9 @@ void Boids::initSimulation(int N) {
 
   cudaMalloc((void**)&dev_posCopy, N * sizeof(glm::vec3));
   checkCUDAErrorWithLine("cudaMalloc dev_posCopy failed!");
+
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
 
   cudaDeviceSynchronize();
 }
@@ -770,11 +776,13 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 
 }
 
+
 /**
 * Step the entire N-body simulation by `dt` seconds.
 */
 void Boids::stepSimulationNaive(float dt) {
   // TODO-1.2 - use the kernels you wrote to step the simulation forward in time.
+
 
     kernUpdateVelocityBruteForce <<<numBlocks, blockSize>>> (numObjects, dev_pos, dev_vel1, dev_vel2);
     kernUpdatePos <<<numBlocks, blockSize>>> (numObjects, dt, dev_pos, dev_vel1);
