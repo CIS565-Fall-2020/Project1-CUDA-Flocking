@@ -44,6 +44,9 @@ void checkCUDAError(const char *msg, int line = -1) {
 #define rule1Distance 5.0f
 #define rule2Distance 3.0f
 #define rule3Distance 5.0f
+#define rule1d2 (rule1Distance * rule1Distance)
+#define rule2d2 (rule2Distance * rule2Distance)
+#define rule3d2 (rule3Distance * rule3Distance)
 
 #define rule1Scale 0.01f
 #define rule2Scale 0.1f
@@ -238,8 +241,8 @@ void Boids::copyBoidsToVBO(float *vbodptr_positions, float *vbodptr_velocities) 
 * stepSimulation *
 ******************/
 
-__device__ float calcDist(const glm::vec3 p1, const glm::vec3 p2) {
-    return sqrt((p1.x - p2.x) * (p1.x - p2.x) +
+__device__ float length2(const glm::vec3 p1, const glm::vec3 p2) {
+    return ((p1.x - p2.x) * (p1.x - p2.x) +
                 (p1.y - p2.y) * (p1.y - p2.y) +
                 (p1.z - p2.z) * (p1.z - p2.z));
 }
@@ -265,15 +268,18 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
   glm::vec3 perceivedCenter = glm::vec3(0.f);
   glm::vec3 perceivedVel = glm::vec3(0.f);
   glm::vec3 rule2C = glm::vec3(0.f);
-  int numNeighbor1 = 0, numNeighbor3 = 0;
+  int numNeighbor1 = 0;
+  int numNeighbor3 = 0;
   glm::vec3 curP = pos[iSelf];
   for (int b = 0; b < N; b++) {
       if (b == iSelf) continue;
-      float dist = calcDist(curP, pos[b]);
-      if (dist < rule1Distance) {
+      float dist2 = length2(curP, pos[b]);
+      if (dist2 < rule1d2) {
           perceivedCenter += pos[b];
           numNeighbor1++;
       }
+      /*
+     
       if (dist < rule2Distance) {
           rule2C -= (pos[b] - curP);
       }
@@ -281,17 +287,20 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
           perceivedVel += vel[b];
           numNeighbor3++;
       }
+      */
   }
   glm::vec3 deltaV = glm::vec3(0.f);
-  if (numNeighbor1 != 0) {
+  if (numNeighbor1 > 0) {
     perceivedCenter /= numNeighbor1;
     deltaV += (perceivedCenter - curP) * rule1Scale;
   }
+  /*
   deltaV += rule2C * rule2Scale;
   if (numNeighbor3 != 0) {
     perceivedVel /= numNeighbor3;
-    deltaV += perceivedVel rule3Scale;
+    deltaV += perceivedVel * rule3Scale;
   }
+  */
   return deltaV;
 }
 
@@ -423,7 +432,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
       int b = particleArrayIndices[j];
       if (b == idx) continue;
       glm::vec3 nPos = pos[b];
-      float dist = calcDist(curPos, nPos);
+      float dist = length2(curPos, nPos);
       if (dist < rule1Distance) {
           perceivedCenter += nPos;
           numNeighbor1++;
@@ -471,8 +480,13 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 */
 void Boids::stepSimulationNaive(float dt) {
     dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
+
     kernUpdateVelocityBruteForce<<<fullBlocksPerGrid, blockSize>>>(numObjects, dev_pos, dev_vel1, dev_vel2);
+    checkCUDAErrorWithLine("kernUpdateVelocityBruteForce failed");
+
     kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
+    checkCUDAErrorWithLine("kernUpdatePos failed");
+
     cudaMemcpy(dev_vel1, dev_vel2, numObjects * sizeof(glm::vec3), cudaMemcpyDeviceToDevice);
 }
 
