@@ -405,7 +405,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // - Identify the grid cell that this particle is in
   glm::vec3 curPos = pos[idx];
   glm::vec3 normPos = (curPos - gridMin) * inverseCellWidth;
-  int3 coord, start;
+  glm::ivec3 coord, start;
   for (int i = 0; i < 3; i++) {
     coord[i] = floor(normPos[i]);
     start[i] = (normPos[i] - coord[i]) < 0.5f ? -1 : 0;
@@ -507,13 +507,6 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   // - Ping-pong buffers as needed
   dim3 boidBlocks((numObjects + blockSize - 1) / blockSize);
   dim3 cellBlocks((gridCellCount + blockSize - 1) / blockSize);
-  std::unique_ptr<int[]> host_particleArrayIndices { new int[numObjects] };
-  std::unique_ptr<int[]> host_particleGridIndices { new int[numObjects] };
-  std::unique_ptr<int[]> host_gridCellStartIndices {new int[gridCellCount] };
-  std::unique_ptr<int[]> host_gridCellEndIndices { new int[gridCellCount] };
-  std::unique_ptr<glm::vec3[]> host_pos { new glm::vec3[numObjects] };
-  std::unique_ptr<glm::vec3[]> host_vel2 { new glm::vec3[numObjects] };
-
 
   kernResetIntBuffer<<<cellBlocks, blockSize>>>(gridCellCount, dev_gridCellStartIndices, numObjects);
   checkCUDAErrorWithLine("kernResetIntBuffer failed");
@@ -527,15 +520,10 @@ void Boids::stepSimulationScatteredGrid(float dt) {
 
   thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects,
     dev_thrust_particleArrayIndices);
-  
-  cudaMemcpy(host_particleGridIndices.get(), dev_particleGridIndices, numObjects * sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(host_particleArrayIndices.get(), dev_particleArrayIndices, numObjects * sizeof(int), cudaMemcpyDeviceToHost);
 
   kernIdentifyCellStartEnd<<<boidBlocks, blockSize>>>(numObjects, dev_particleGridIndices, 
     dev_gridCellStartIndices, dev_gridCellEndIndices);
   checkCUDAErrorWithLine("kernIdentifyCellStartEnd failed");
-  cudaMemcpy(host_gridCellStartIndices.get(), dev_gridCellStartIndices, gridCellCount * sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(host_gridCellEndIndices.get(), dev_gridCellEndIndices, gridCellCount * sizeof(int), cudaMemcpyDeviceToHost);
 
   kernUpdateVelNeighborSearchScattered<<<boidBlocks, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
     dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
