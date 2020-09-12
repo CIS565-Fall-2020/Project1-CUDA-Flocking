@@ -159,7 +159,7 @@ void Boids::initSimulation(int N) {
     checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
 
     // LOOK-2.1 computing grid params
-    gridCellWidth = std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
+    gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
     int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
     gridSideCount = 2 * halfSideCount;
 
@@ -430,7 +430,7 @@ __global__ void kernIdentifyCellStartEnd(int N, int* particleGridIndices,
 }
 
 __device__ glm::vec3 computeVelocityChangeGivenCell(int N, int gridResolution, int gridCellIndex, int iSelf,
-    int* gridCellStartIndices, int* gridCellEndIndices, int* particleArrayIndices, glm::vec3* pos, glm::vec3* vel, bool coherent) {
+    int* gridCellStartIndices, int* gridCellEndIndices, int* particleArrayIndices, glm::vec3* pos, glm::vec3* vel) {
     if (gridCellIndex < 0 || gridCellIndex >= gridResolution * gridResolution * gridResolution) {
         return glm::vec3(0.f);
     }
@@ -453,7 +453,7 @@ __device__ glm::vec3 computeVelocityChangeGivenCell(int N, int gridResolution, i
         float numNeighbors3 = 0;
 
         for (int i = start; i <= end; i++) {
-            int location = coherent ? i : particleArrayIndices[i];
+            int location = particleArrayIndices[i];
             if (location == iSelf) {
                 continue;
             }
@@ -499,11 +499,78 @@ __device__ glm::vec3 computeVelocityChangeGivenCell(int N, int gridResolution, i
     }
 }
 
+__device__ glm::vec3 computeVelocityChangeGivenCellCoherent(int N, int gridResolution, int gridCellIndex, int iSelf,
+    int* gridCellStartIndices, int* gridCellEndIndices, glm::vec3* pos, glm::vec3* vel) {
+    if (gridCellIndex < 0 || gridCellIndex >= gridResolution * gridResolution * gridResolution) {
+        return glm::vec3(0.f);
+    }
+    else {
+        int start = gridCellStartIndices[gridCellIndex];
+        int end = gridCellEndIndices[gridCellIndex];
+
+        // no boids in grid cell
+        if (start < 0) {
+            return glm::vec3(0.f);
+        }
+
+        glm::vec3 thisPos = pos[iSelf];
+
+        glm::vec3 center(0.f);
+        glm::vec3 separate(0.f);
+        glm::vec3 cohesion(0.f);
+
+        float numNeighbors1 = 0;
+        float numNeighbors3 = 0;
+
+        for (int i = start; i <= end; i++) {
+            if (i == iSelf) {
+                continue;
+            }
+
+            glm::vec3 currPos = pos[i];
+            glm::vec3 currVel = vel[i];
+
+            float distance = glm::length(thisPos - currPos);
+
+            // Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
+            if (distance < rule1Distance) {
+                center += currPos;
+                numNeighbors1 += 1.f;
+            }
+
+            // Rule 2: boids try to stay a distance d away from each other
+            if (distance < rule2Distance) {
+                separate -= currPos - thisPos;
+            }
+
+            // Rule 3: boids try to match the speed of surrounding boids
+            if (distance < rule3Distance) {
+                cohesion += currVel;
+                numNeighbors3 += 1.f;
+            }
+        }
+
+        glm::vec3 change(0.f);
+
+        if (numNeighbors1 > 0) {
+            center /= numNeighbors1;
+            change += (center - thisPos) * rule1Scale;
+        }
+
+        if (numNeighbors3 > 0) {
+            cohesion /= numNeighbors3;
+            change += cohesion * rule3Scale;
+        }
+
+        change += separate * rule2Scale;
+
+        return change;
+    }
+}
 
 __device__ glm::vec3 velChangeSmallGrid(int N, int iSelf, int gridResolution, glm::vec3 gridMin,
-    float inverseCellWidth, float cellWidth,
-    int* gridCellStartIndices, int* gridCellEndIndices,
-    int* particleArrayIndices, glm::vec3* pos, glm::vec3* vel1, glm::vec3* vel2, bool coherent) {
+    float inverseCellWidth, float cellWidth, int* gridCellStartIndices, int* gridCellEndIndices,
+    int* particleArrayIndices, glm::vec3* pos, glm::vec3* vel1, glm::vec3* vel2) {
     glm::vec3 currPos = pos[iSelf];
     glm::ivec3 gridCell = floor((currPos - gridMin) * inverseCellWidth);
     glm::ivec3 gridCellRound = round((currPos - gridMin) * inverseCellWidth);
@@ -524,7 +591,38 @@ __device__ glm::vec3 velChangeSmallGrid(int N, int iSelf, int gridResolution, gl
             for (int i = xMin; i <= xMax; i++) {
                 int gridCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
                 glm::vec3 c = computeVelocityChangeGivenCell(N, gridResolution, gridCellIndex, iSelf,
-                    gridCellStartIndices, gridCellEndIndices, particleArrayIndices, pos, vel1, coherent);
+                    gridCellStartIndices, gridCellEndIndices, particleArrayIndices, pos, vel1);
+                change += c;
+            }
+        }
+    }
+    return change;
+}
+
+__device__ glm::vec3 velChangeSmallGridCoherent(int N, int iSelf, int gridResolution, glm::vec3 gridMin,
+    float inverseCellWidth, float cellWidth, int* gridCellStartIndices, int* gridCellEndIndices,
+    glm::vec3* pos, glm::vec3* vel1, glm::vec3* vel2) {
+    glm::vec3 currPos = pos[iSelf];
+    glm::ivec3 gridCell = floor((currPos - gridMin) * inverseCellWidth);
+    glm::ivec3 gridCellRound = round((currPos - gridMin) * inverseCellWidth);
+
+    int gridCellIndex = gridIndex3Dto1D(gridCell.x, gridCell.y, gridCell.z, gridResolution);
+
+    int xMin = gridCell.x == gridCellRound.x ? gridCell.x - 1 : gridCell.x;
+    int yMin = gridCell.y == gridCellRound.y ? gridCell.y - 1 : gridCell.y;
+    int zMin = gridCell.z == gridCellRound.z ? gridCell.z - 1 : gridCell.z;
+
+    int xMax = gridCell.x == gridCellRound.x ? gridCell.x : gridCell.x + 1;
+    int yMax = gridCell.y == gridCellRound.y ? gridCell.y : gridCell.y + 1;
+    int zMax = gridCell.z == gridCellRound.z ? gridCell.z : gridCell.z + 1;
+
+    glm::vec3 change(0.f);
+    for (int k = zMin; k <= zMax; k++) {
+        for (int j = yMin; j <= yMax; j++) {
+            for (int i = xMin; i <= xMax; i++) {
+                int gridCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
+                glm::vec3 c = computeVelocityChangeGivenCellCoherent(N, gridResolution, gridCellIndex, iSelf,
+                    gridCellStartIndices, gridCellEndIndices, pos, vel1);
                 change += c;
             }
         }
@@ -533,10 +631,9 @@ __device__ glm::vec3 velChangeSmallGrid(int N, int iSelf, int gridResolution, gl
 }
 
 __device__ glm::vec3 velChangeLargeGrid(int N, int iSelf, int gridResolution, glm::vec3 gridMin,
-    float inverseCellWidth, float cellWidth,
-    int* gridCellStartIndices, int* gridCellEndIndices,
+    float inverseCellWidth, float cellWidth, int* gridCellStartIndices, int* gridCellEndIndices,
     int* particleArrayIndices,
-    glm::vec3* pos, glm::vec3* vel1, glm::vec3* vel2, bool coherent) {
+    glm::vec3* pos, glm::vec3* vel1, glm::vec3* vel2) {
     glm::vec3 currPos = pos[iSelf];
     glm::ivec3 gridCell = floor((currPos - gridMin) * inverseCellWidth);
 
@@ -548,7 +645,29 @@ __device__ glm::vec3 velChangeLargeGrid(int N, int iSelf, int gridResolution, gl
             for (int k = gridCell.z - 1; k <= gridCell.z + 1; k++) {
                 int gridCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
                 glm::vec3 c = computeVelocityChangeGivenCell(N, gridResolution, gridCellIndex, iSelf,
-                    gridCellStartIndices, gridCellEndIndices, particleArrayIndices, pos, vel1, coherent);
+                    gridCellStartIndices, gridCellEndIndices, particleArrayIndices, pos, vel1);
+                change += c;
+            }
+        }
+    }
+    return change;
+}
+
+__device__ glm::vec3 velChangeLargeGridCoherent(int N, int iSelf, int gridResolution, glm::vec3 gridMin,
+    float inverseCellWidth, float cellWidth, int* gridCellStartIndices, int* gridCellEndIndices,
+    glm::vec3* pos, glm::vec3* vel1, glm::vec3* vel2) {
+    glm::vec3 currPos = pos[iSelf];
+    glm::ivec3 gridCell = floor((currPos - gridMin) * inverseCellWidth);
+
+    int gridCellIndex = gridIndex3Dto1D(gridCell.x, gridCell.y, gridCell.z, gridResolution);
+
+    glm::vec3 change(0.f);
+    for (int i = gridCell.x - 1; i <= gridCell.x + 1; i++) {
+        for (int j = gridCell.y - 1; j <= gridCell.y + 1; j++) {
+            for (int k = gridCell.z - 1; k <= gridCell.z + 1; k++) {
+                int gridCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
+                glm::vec3 c = computeVelocityChangeGivenCellCoherent(N, gridResolution, gridCellIndex, iSelf,
+                    gridCellStartIndices, gridCellEndIndices, pos, vel1);
                 change += c;
             }
         }
@@ -577,11 +696,11 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     glm::vec3 change(0.f);
     if (cellWidth > glm::max(glm::max(rule1Distance, rule2Distance), rule3Distance)) {
         change += velChangeSmallGrid(N, index, gridResolution, gridMin,inverseCellWidth, cellWidth,
-            gridCellStartIndices, gridCellEndIndices, particleArrayIndices, pos, vel1, vel2, false);
+            gridCellStartIndices, gridCellEndIndices, particleArrayIndices, pos, vel1, vel2);
     }
     else {
         change += velChangeLargeGrid(N, index, gridResolution, gridMin, inverseCellWidth, cellWidth,
-            gridCellStartIndices, gridCellEndIndices, particleArrayIndices, pos, vel1, vel2, false);
+            gridCellStartIndices, gridCellEndIndices, particleArrayIndices, pos, vel1, vel2);
     }
 
     glm::vec3 newVel = vel1[index] + change;
@@ -619,12 +738,12 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 
     glm::vec3 change(0.f);
     if (cellWidth > glm::max(glm::max(rule1Distance, rule2Distance), rule3Distance)) {
-        change += velChangeSmallGrid(N, index, gridResolution, gridMin, inverseCellWidth, cellWidth,
-            gridCellStartIndices, gridCellEndIndices, gridCellEndIndices, pos, vel1, vel2, true);
+        change += velChangeSmallGridCoherent(N, index, gridResolution, gridMin, inverseCellWidth, cellWidth,
+            gridCellStartIndices, gridCellEndIndices, pos, vel1, vel2);
     }
     else {
-        change += velChangeLargeGrid(N, index, gridResolution, gridMin, inverseCellWidth, cellWidth,
-            gridCellStartIndices, gridCellEndIndices, gridCellEndIndices, pos, vel1, vel2, true);
+        change += velChangeLargeGridCoherent(N, index, gridResolution, gridMin, inverseCellWidth, cellWidth,
+            gridCellStartIndices, gridCellEndIndices, pos, vel1, vel2);
     }
 
     glm::vec3 newVel = vel1[index] + change;
