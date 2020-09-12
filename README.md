@@ -18,4 +18,10 @@ anything here that you don't want to share with the world.)
 
 ### Changing number of boids
 
+![](images/project1-p1.png)
+
+![](images/project1-p2.png)
+
 ### Changing block size
+
+![](images/project1-p3.png)
