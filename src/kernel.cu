@@ -159,7 +159,14 @@ void Boids::initSimulation(int N) {
     checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
 
     // LOOK-2.1 computing grid params
+
+#define testing27
+#ifdef testing27
+    gridCellWidth = std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
+#else
     gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
+#endif
+    
     int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
     gridSideCount = 2 * halfSideCount;
 
@@ -373,7 +380,6 @@ __global__ void kernComputeIndices(int N, int gridResolution,
         gridResolution);
     gridIndices[index] = gi;
     indices[index] = index;
-    // todo: test this implementation
 }
 
 // LOOK-2.1 Consider how this could be useful for indicating that a cell
@@ -437,22 +443,33 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     glm::vec3 offset = (position - gridMin) * inverseCellWidth;
     glm::vec3 floor = glm::floor(offset);
 
-    int3 cur = make_int3((int)floor.x, (int)floor.y, (int)floor.z);
+#ifdef testing27
+    int sz = 3;
+    int3 start = make_int3((int)floor.x - 1, (int)floor.y - 1, (int)floor.z - 1);
+    int3 next = make_int3(1, 1, 1);
+#else
+    int sz = 2;
+    int3 start = make_int3((int)floor.x, (int)floor.y, (int)floor.z);
     int3 next = make_int3(
         (offset.x > floor.x + 0.5f) ? 1 : -1,
         (offset.y > floor.y + 0.5f) ? 1 : -1,
         (offset.z > floor.z + 0.5f) ? 1 : -1
     );
-
+#endif
     glm::vec3 v1, v2, v3;
     int numberOfNeighbors1 = 0;
     int numberOfNeighbors3 = 0;
     glm::vec3 perceivedCenter(0.f);
     glm::vec3 c(0.f);
     glm::vec3 perceivedVelocity(0.f);
-    for (int k = 0; k < 2; k++, cur.z += next.z) {
-        for (int j = 0; j < 2; j++, cur.y += next.y) {
-            for (int i = 0; i < 2; i++, cur.x += next.x) {
+    for (int k = 0; k < sz; k++) {
+        for (int j = 0; j < sz; j++) {
+            for (int i = 0; i < sz; i++) {
+                int3 cur = make_int3(
+                    start.x + i * next.x,
+                    start.y + j * next.y,
+                    start.z + k * next.z
+                );
                 if (0 <= cur.x && cur.x < gridResolution &&
                     0 <= cur.y && cur.y < gridResolution &&
                     0 <= cur.z && cur.z < gridResolution) {
@@ -531,12 +548,19 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
     glm::vec3 offset = (pos[index] - gridMin) * inverseCellWidth;
     glm::vec3 floor = glm::floor(offset);
 
-    int3 cur = make_int3((int)floor.x, (int)floor.y, (int)floor.z);
+#ifdef testing27
+    int sz = 3;
+    int3 start = make_int3((int)floor.x - 1, (int)floor.y - 1, (int)floor.z - 1);
+    int3 next = make_int3(1, 1, 1);
+#else
+    int sz = 2;
+    int3 start = make_int3((int)floor.x, (int)floor.y, (int)floor.z);
     int3 next = make_int3(
         (offset.x > floor.x + 0.5f) ? 1 : -1,
         (offset.y > floor.y + 0.5f) ? 1 : -1,
         (offset.z > floor.z + 0.5f) ? 1 : -1
     );
+#endif
 
     glm::vec3 v1, v2, v3;
     int numberOfNeighbors1 = 0;
@@ -544,9 +568,14 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
     glm::vec3 perceivedCenter(0.f);
     glm::vec3 c(0.f);
     glm::vec3 perceivedVelocity(0.f);
-    for (int k = 0; k < 2; k++, cur.z += next.z) {
-        for (int j = 0; j < 2; j++, cur.y += next.y) {
-            for (int i = 0; i < 2; i++, cur.x += next.x) {
+    for (int k = 0; k < sz; k++) {
+        for (int j = 0; j < sz; j++) {
+            for (int i = 0; i < sz; i++) {
+                int3 cur = make_int3(
+                    start.x + i * next.x,
+                    start.y + j * next.y,
+                    start.z + k * next.z
+                );
                 if (0 <= cur.x && cur.x < gridResolution &&
                     0 <= cur.y && cur.y < gridResolution &&
                     0 <= cur.z && cur.z < gridResolution) {
