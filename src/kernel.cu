@@ -394,7 +394,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   glm::vec3 *pos, glm::vec3 *vel1, glm::vec3 *vel2) {
   // TODO-2.1 - Update a boid's velocity using the uniform grid to reduce
   // the number of boids that need to be checked.
-  // - Identify the grid cell that this particle is in
+  
   // - Identify which cells may contain neighbors. This isn't always 8.
   // - For each cell, read the start/end indices in the boid pointer array.
   // - Access each boid in the cell and compute velocity change from
@@ -402,10 +402,14 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // - Clamp the speed change before putting the new speed in vel2
   int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
   if (idx >= N) return;
+  // - Identify the grid cell that this particle is in
   glm::vec3 curPos = pos[idx];
-  int posX = floor((curPos.x - gridMin.x) * inverseCellWidth);
-  int posY = floor((curPos.y - gridMin.y) * inverseCellWidth);
-  int posZ = floor((curPos.z - gridMin.z) * inverseCellWidth);
+  glm::vec3 normPos = (curPos - gridMin) * inverseCellWidth;
+  int3 coord, start;
+  for (int i = 0; i < 3; i++) {
+    coord[i] = floor(normPos[i]);
+    start[i] = (normPos[i] - coord[i]) < 0.5f ? -1 : 0;
+  }
 
   glm::vec3 perceivedCenter = glm::vec3(0.f);
   glm::vec3 perceivedVel = glm::vec3(0.f);
@@ -413,9 +417,9 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   int numNeighbor1 = 0, numNeighbor3 = 0;
 
   for (int i = 0; i < 8; i++) {
-    int nX = posX + ((i & 1) ? 1 : -1);
-    int nY = posY + (((i >> 1) & 1) ? 1 : -1);
-    int nZ = posZ + (((i >> 2) & 1) ? 1 : -1);
+    int nX = coord[0] + start[0] + (i & 1);
+    int nY = coord[1] + start[1] + ((i >> 1) & 1);
+    int nZ = coord[2] + start[2] + ((i >> 2) & 1);
     if (nX < 0 || nY < 0 || nZ < 0 ||
       nX >= gridResolution || nY >= gridResolution || nZ >= gridResolution) {
       continue;
@@ -428,27 +432,30 @@ __global__ void kernUpdateVelNeighborSearchScattered(
       int b = particleArrayIndices[j];
       if (b == idx) continue;
       glm::vec3 nPos = pos[b];
-      float dist = length2(curPos, nPos);
-      if (dist < rule1Distance) {
+      float dist2 = length2(curPos, nPos);
+      if (dist2 < rule1d2) {
           perceivedCenter += nPos;
           numNeighbor1++;
       }
-      if (dist < rule2Distance) {
-          rule2C -= (curPos - nPos);
+      if (dist2 < rule2d2) {
+          rule2C -= (nPos - curPos);
       }
-      if (dist < rule3Distance) {
+      if (dist2 < rule3d2) {
           perceivedVel += vel1[b];
           numNeighbor3++;
       }
     }
   }
-  if (numNeighbor1 != 0) {
+  glm::vec3 newVel = vel1[idx];
+  if (numNeighbor1 > 0) {
     perceivedCenter /= numNeighbor1;
-  } else {
-    perceivedCenter = curPos;
+    newVel += (perceivedCenter - curPos) * rule1Scale;
   }
-  if (numNeighbor3 != 0) perceivedVel /= numNeighbor3;
-  glm::vec3 newVel = vel1[idx] + (perceivedCenter - curPos) * rule1Scale + rule2C * rule2Scale + perceivedVel * rule3Scale;
+  newVel += rule2C * rule2Scale;
+  if (numNeighbor3 > 0) {
+    perceivedVel /= numNeighbor3;
+    newVel += perceivedVel * rule3Scale;
+  }
   vel2[idx] = clamp(newVel, -maxSpeed, maxSpeed);
 }
 
