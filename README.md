@@ -56,3 +56,11 @@ This could because the relative differences of loop times is bigger when we have
 ![](./images/FPS%20Block%20Search.png)
 
 **Answer for Q4:** For coherent grid, this will not cause significant performance loss. In comparison, the program suffers performance loss when we have a bigger search radius. This could because the coherency of the data structure in uniform grid is bad. More search radius means worse coherent data access for position and velocity data. For coherent grid, because of coherent construction of data, this cannot cause a big problem of performance.
+
+
+
+### Extra Credit: Grid-Looping Optimization
+
+![](./images/Radius Search.png)
+
+I implemented radius search in uniform grid method and final result is really impressive! It boost a lot from original method!
