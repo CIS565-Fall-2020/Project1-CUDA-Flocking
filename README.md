@@ -16,7 +16,7 @@ anything here that you don't want to share with the world.)
 
 * Changing the block size or block count doesn't affect the overall performance a lot. The total number of threads equal the total number of boids, so changing the block size / block cound only affects the organization of threads.
 
-* I don't see any performance improvement with more coherent grid. 
+* I don't see any performance improvement with more coherent uniform grid, since having more grid does not affect the number of neighboring boids that need to be checked.
 
 * Checking 27 vs 8 neighboring cells slightly reduces the performance, but not significant. Although there are more cells to check, the total number of neighboring boids being checked remains the same. The lower performance results from having a larger grid array. 
 
