@@ -7,4 +7,6 @@ Project 1 - Flocking**
 
 ## CUDA Flocking
 
+* Boid simulation running in Coherent Uniform Grid mode - 50000 particles (FPS capped to 35):
+
 ![Coherent mode gif](images/coherent.gif)
