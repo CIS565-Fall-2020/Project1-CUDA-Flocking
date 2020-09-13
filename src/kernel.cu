@@ -552,10 +552,10 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   dev_thrust_particleArrayIndices = thrust::device_ptr<int>(dev_particleArrayIndices);
   thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects, dev_thrust_particleArrayIndices);
 
-  //kernIdentifyCellStartEnd<<<cellFullBlocksPerGrid, blockSize>>>(gridCellCount, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
-  //kernUpdateVelNeighborSearchScattered<<<objectFullBlocksPerGrid, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
-  //  dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
-  //kernUpdatePos<<<objectFullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
+  kernIdentifyCellStartEnd<<<cellFullBlocksPerGrid, blockSize>>>(gridCellCount, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
+  kernUpdateVelNeighborSearchScattered<<<objectFullBlocksPerGrid, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
+    dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
+  kernUpdatePos<<<objectFullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
 
   glm::vec3* temp = dev_vel1;
   dev_vel1 = dev_vel2;
