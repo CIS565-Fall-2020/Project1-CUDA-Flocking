@@ -9,8 +9,7 @@ Project 1 - Flocking**
 ### README
 
 ### Boids
-![boids](images/BoidsScreenShot.png)
-![boidsGif](images/boids.gif)
+![boids](images/BoidsScreenShot.png=250px)![boidsGif](images/boids.gif)
 
 ### Performance Analysis
 
