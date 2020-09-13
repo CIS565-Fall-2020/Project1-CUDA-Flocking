@@ -76,8 +76,8 @@ glm::vec3 *dev_vel2;
 // For efficient sorting and the uniform grid. These should always be parallel.
 int *dev_particleArrayIndices; // What index in dev_pos and dev_velX represents this particle?
 int *dev_particleGridIndices; // What grid cell is this particle in?
-int *dev_dummyGridIndices;
-int* dev_dummyGridIndices2;
+glm::vec3 *dev_dummyPos;
+glm::vec3 *dev_dummyVel1;
 // needed for use with thrust
 //thrust::device_ptr<int> dev_thrust_particleArrayIndices;
 //thrust::device_ptr<int> dev_thrust_particleGridIndices;
@@ -178,11 +178,11 @@ void Boids::initSimulation(int N) {
   cudaMalloc((void**)&dev_particleGridIndices, N * sizeof(int));
   checkCUDAErrorWithLine("cudaMalloc dev_particleGridIndices failed!");
 
-  cudaMalloc((void**)&dev_dummyGridIndices, N * sizeof(int));
-  checkCUDAErrorWithLine("cudaMalloc dev_dummyGridIndices failed!");
+  cudaMalloc((void**)&dev_dummyPos, N * sizeof(glm::vec3));
+  checkCUDAErrorWithLine("cudaMalloc dev_dummyPos failed!");
 
-  cudaMalloc((void**)&dev_dummyGridIndices2, N * sizeof(int));
-  checkCUDAErrorWithLine("cudaMalloc dev_dummyGridIndices2 failed!");
+  cudaMalloc((void**)&dev_dummyVel1, N * sizeof(glm::vec3));
+  checkCUDAErrorWithLine("cudaMalloc dev_dummyVel1 failed!");
 
   cudaMalloc((void**)&dev_gridCellStartIndices, gridCellCount * sizeof(int));
   checkCUDAErrorWithLine("cudaMalloc dev_gridCellStartIndices failed!");
@@ -575,6 +575,14 @@ __global__ void kernCopyInt(int N, int* buffer1, int* buffer2) {
   buffer1[index] = buffer2[index];
 }
 
+__global__ void kernCopyDummy(int N, glm::vec3* buffer1, glm::vec3* dummy, int* arrayIndices) {
+  int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+  if (index >= N) {
+    return;
+  }
+  buffer1[index] = dummy[arrayIndices[index]];
+}
+
 // -----------------------------------------------------------------------------
 
 
@@ -745,16 +753,6 @@ void Boids::stepSimulationScatteredGrid(float dt) {
    dev_gridCellStartIndices, dev_gridCellEndIndices);
   checkCUDAErrorWithLine("kernIdentifyCellStartEnd failed!");
 
-  //kerntestStartEnd << <fullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount,
-  //  gridMinimum, gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices, dev_vel2,
-  //  dev_gridCellStartIndices, dev_gridCellEndIndices);
-  //checkCUDAErrorWithLine("kerntestStartEnd failed!");
-
-
-  //kerntestStartEnd2 << <blocksBasedOnCellCount, blockSize >> > (gridCellCount, dev_gridCellStartIndices, dev_gridCellEndIndices, 
-  //  dev_particleArrayIndices, dev_vel2);
-  //checkCUDAErrorWithLine("kerntestStartEnd2 failed!");
-
    //update velocity
   kernUpdateVelNeighborSearchScattered << <fullBlocksPerGrid, blockSize >> > (
     numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth, dev_gridCellStartIndices, 
@@ -794,19 +792,22 @@ void Boids::stepSimulationCoherentGrid(float dt) {
     gridMinimum, gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
   checkCUDAErrorWithLine("kernComputeIndices failed!");
 
-  // setup dummy arrays
-  kernCopyInt << <fullBlocksPerGrid, blockSize >> > (numObjects, dev_dummyGridIndices, dev_particleGridIndices);
+   //setup dummy arrays
+  kernCopyVel << <fullBlocksPerGrid, blockSize >> > (numObjects, dev_dummyPos, dev_pos);
+  checkCUDAErrorWithLine("kernCopy Failed!");
+  kernCopyVel << <fullBlocksPerGrid, blockSize >> > (numObjects, dev_dummyVel1, dev_vel1);
   checkCUDAErrorWithLine("kernCopy Failed!");
 
 
   // use thrust to sort
   thrust::device_ptr<int> dev_thrust_gridIndices(dev_particleGridIndices);
-  thrust::device_ptr<glm::vec3> dev_thrust_pos(dev_pos);
-  thrust::sort_by_key(dev_thrust_gridIndices, dev_thrust_gridIndices + numObjects, dev_thrust_pos);
+  thrust::device_ptr<int> dev_thrust_boidIndices(dev_particleArrayIndices);
+  thrust::sort_by_key(dev_thrust_gridIndices, dev_thrust_gridIndices + numObjects, dev_thrust_boidIndices);
 
-  thrust::device_ptr<int> dev_thrust_dummyGridIndices(dev_dummyGridIndices);
-  thrust::device_ptr<glm::vec3> dev_thrust_vel1(dev_vel1);
-  thrust::sort_by_key(dev_thrust_dummyGridIndices, dev_thrust_dummyGridIndices + numObjects, dev_thrust_vel1);
+  kernCopyDummy << <fullBlocksPerGrid, blockSize >> > (numObjects, dev_pos, dev_dummyPos, dev_particleArrayIndices);
+  checkCUDAErrorWithLine("kernCopyDummy Failed!");
+  kernCopyDummy << <fullBlocksPerGrid, blockSize >> > (numObjects, dev_vel1, dev_dummyVel1, dev_particleArrayIndices);
+  checkCUDAErrorWithLine("kernCopyDummy Failed!");
 
   
 
@@ -848,8 +849,8 @@ void Boids::endSimulation() {
   cudaFree(dev_gridCellStartIndices);
   cudaFree(dev_gridCellEndIndices);
 
-  cudaFree(dev_dummyGridIndices);
-  cudaFree(dev_dummyGridIndices2);
+  cudaFree(dev_dummyPos);
+  cudaFree(dev_dummyVel1);
 }
 
 void Boids::unitTest() {
