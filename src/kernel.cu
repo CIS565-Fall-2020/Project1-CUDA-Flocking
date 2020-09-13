@@ -394,7 +394,11 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
 	if (index == 0) {
 		gridCellStartIndices[x] = 0;
 	}
+	else if (index == N - 1) {
+		gridCellEndIndices[x] = index;
+	}
 	else {
+		// in the middle
 		int prev = particleGridIndices[index - 1];
 		if (x != prev) {
 			gridCellEndIndices[prev] = index - 1;
@@ -462,6 +466,10 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 				int cellIdx = gridIndex3Dto1D(i, j, k, gridResolution);
 				int startIdx = gridCellStartIndices[cellIdx];
 				int endIdx = gridCellEndIndices[cellIdx];
+				if (startIdx < 0 || endIdx < 0) {
+					// No boid in this cell
+					continue;
+				}
 				for (int p = startIdx; p <= endIdx; p++) {
 					int idx = particleArrayIndices[p];
 					float dist = glm::distance(pos[index], pos[idx]);
@@ -534,6 +542,10 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 				int cellIdx = gridIndex3Dto1D(i, j, k, gridResolution);
 				int startIdx = gridCellStartIndices[cellIdx];
 				int endIdx = gridCellEndIndices[cellIdx];
+				if (startIdx < 0 || endIdx < 0) {
+					// No boid in this cell
+					continue;
+				}
 				for (int idx = startIdx; idx <= endIdx; idx++) {
 					float dist = glm::distance(pos[index], pos[idx]);
 					if (dist < rule1Distance) {
