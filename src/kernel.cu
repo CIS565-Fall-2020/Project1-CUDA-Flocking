@@ -234,39 +234,44 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3* po
   glm::vec3 perceivedCenter(0.f);
   glm::vec3 posSelf = pos[iSelf];
   int neighbors = 0;
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     if (i != iSelf && glm::distance(posSelf, pos[i]) < rule1Distance) {
       perceivedCenter += pos[i];
       neighbors++;
     }
+  }
 
-  if (neighbors != 0)
+  if (neighbors != 0) {
     perceivedCenter /= neighbors; // compute the perceived center of mass by dividing by the number of neighbors
+  }
   glm::vec3 velSelf = (perceivedCenter - posSelf) * rule1Scale;
 
   // Rule 2 Separation: boids try to stay a distance d away from each other
   glm::vec3 repulsion(0.f);
   neighbors = 0;
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     if (i != iSelf && glm::distance(posSelf, pos[i]) < rule2Distance) {
       repulsion -= (pos[i] - posSelf);
       neighbors++;
     }
+  }
 
   velSelf += (repulsion * rule2Scale);
 
   // Rule 3 Alignment: boids try to match the speed of surrounding boids
   glm::vec3 perceivedVelocity(0.f);
   neighbors = 0;
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     if (i != iSelf && glm::distance(posSelf, pos[i]) < rule3Distance) {
       perceivedVelocity += vel[i];
       neighbors++;
     }
+  }
 
-  if (neighbors != 0)
+  if (neighbors != 0) {
     perceivedVelocity /= neighbors; // compute the perceived average velocity by dividing by the number of neighbors
-  velSelf += perceivedVelocity * rule3Scale;
+  }
+  velSelf += (perceivedVelocity * rule3Scale);
 
   return velSelf;
 }
@@ -279,7 +284,7 @@ __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
   glm::vec3 *vel1, glm::vec3 *vel2) {
   // Compute a new velocity based on pos and vel1
   int index = threadIdx.x + (blockIdx.x * blockDim.x);
-  glm::vec3 velSelf = computeVelocityChange(N, index, pos, vel1);
+  glm::vec3 velSelf = vel1[index] + computeVelocityChange(N, index, pos, vel1);
   // Clamp the speed
   float speed = glm::length(velSelf);
   if (speed > maxSpeed)
