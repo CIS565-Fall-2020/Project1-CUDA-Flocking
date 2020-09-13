@@ -1,0 +1,6 @@
+
+How to change the tab size in Visual Studio...
+Visual Studio
+Open 'Tools' in the Visual Studio Menu and click on 'Options'
+Click on 'Text Editor', then select 'C/C++' and open the 'Tabs' settings.
+Set both 'Tab size' and 'Indent size' to 4 and make sure 'Insert spaces' is selected below.

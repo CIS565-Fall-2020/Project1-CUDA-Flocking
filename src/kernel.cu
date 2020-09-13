@@ -229,11 +229,41 @@ void Boids::copyBoidsToVBO(float *vbodptr_positions, float *vbodptr_velocities) 
 * Compute the new velocity on the body with index `iSelf` due to the `N` boids
 * in the `pos` and `vel` arrays.
 */
-__device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *pos, const glm::vec3 *vel) {
-  // Rule 1: boids fly towards their local perceived center of mass, which excludes themselves
-  // Rule 2: boids try to stay a distance d away from each other
-  // Rule 3: boids try to match the speed of surrounding boids
-  return glm::vec3(0.0f, 0.0f, 0.0f);
+__device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3* pos, const glm::vec3* vel) {
+  // Rule 1 Cohesion: boids fly towards their local perceived center of mass, which excludes themselves
+  glm::vec3 perceivedCenter(0.f);
+  glm::vec3 posSelf = pos[iSelf];
+  int neighborhoodSize = 0;
+  for (int i = 0; i < N; i++)
+    if (i != iSelf && glm::distance(posSelf, pos[i]) < rule1Distance) {
+      perceivedCenter += pos[i];
+      neighborhoodSize++;
+    }
+
+  perceivedCenter /= neighborhoodSize; // compute the perceived center of mass by dividing by the number of neighbors
+  glm::vec3 velSelf = (perceivedCenter - posSelf) * rule1Scale;
+
+  // Rule 2 Separation: boids try to stay a distance d away from each other
+  glm::vec3 repulsion(0.f);
+  neighborhoodSize = 0;
+  for (int i = 0; i < N; i++)
+    if (i != iSelf && glm::distance(posSelf, pos[i]) < rule2Distance) {
+      repulsion -= (pos[i] - posSelf);
+      neighborhoodSize++;
+    }
+
+  velSelf += (repulsion * rule2Scale);
+
+  // Rule 3 Alignment: boids try to match the speed of surrounding boids
+  glm::vec3 perceivedVelocity(0.f);
+  for (int i = 0; i < N; i++)
+    if (i != iSelf && glm::distance(posSelf, pos[i]) < rule3Distance)
+      perceivedVelocity += vel[i];
+
+  perceivedVelocity /= N; // compute the perceived average velocity by dividing by the number of neighbors
+  velSelf += perceivedVelocity * rule3Scale;
+
+  return velSelf;
 }
 
 /**
