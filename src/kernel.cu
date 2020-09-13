@@ -246,6 +246,8 @@ __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
     glm::vec3 *vel1, glm::vec3 *vel2) {
     // Compute a new velocity based on pos and vel1
     int idx = threadIdx.x + (blockIdx.x * blockDim.x);
+    if (idx >= N) { return; } 
+
     glm::vec3 separate(0.0f, 0.0f, 0.0f);
     glm::vec3 cohesion(0.0f, 0.0f, 0.0f);
     glm::vec3 center(0.0f, 0.0f, 0.0f);
@@ -276,8 +278,9 @@ __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
     glm::vec3 new_vel(0.0f, 0.0f, 0.0f);
     if (neighbor_count1 > 0) { new_vel += (center - boid_pos) * rule1Scale;  }
     new_vel += (separate * rule2Scale);
-    new_vel += (cohesion * rule3Scale);
+    if (neighbor_count3 > 0) { new_vel += (cohesion * rule3Scale); }
 
+    new_vel += vel1[idx];
     // Clamp the speed
     float speed = glm::length(new_vel);
     if (speed > maxSpeed) {
@@ -393,10 +396,10 @@ void Boids::stepSimulationNaive(float dt) {
     dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
     kernUpdateVelocityBruteForce<<<fullBlocksPerGrid, blockSize>>>(numObjects, dev_pos, dev_vel1, dev_vel2);
     checkCUDAErrorWithLine("kernUpdateVelocityBruteForce failed!");
-    kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
+    kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel1);
     checkCUDAErrorWithLine("kernUpdatePos failed!");
     // TODO-1.2 ping-pong the velocity buffers
-    glm::vec3* tmp = dev_vel1;
+    glm::vec3 *tmp = dev_vel1;
     dev_vel1 = dev_vel2;
     dev_vel2 = tmp;
 }
