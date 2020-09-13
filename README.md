@@ -6,7 +6,8 @@ Project 1 - Flocking**
 * Tested on: CETS virtual lab MOR100C-08, Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz
 
 ### Boids Simulation
-<img src="https://github.com/WeiyuDu/Project1-CUDA-Flocking/blob/master/images/demo1.gif"/></br>
+<img src="https://github.com/WeiyuDu/Project1-CUDA-Flocking/blob/master/images/boid.png" width="600"/>
+<img src="https://github.com/WeiyuDu/Project1-CUDA-Flocking/blob/master/images/demo1.gif" width="600"/></br>
 ### Performance Analysis
 1) Plot of number of boids versus frame rate without visualization (x axis: 5000, 10000, 20000, 50000)
 <img src="https://github.com/WeiyuDu/Project1-CUDA-Flocking/blob/master/images/numboid_novis.png"/>
