@@ -458,7 +458,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
                     
                 int curr_idx = gridIndex3Dto1D(i, j, k, gridResolution);
                 
-                if (gridCellStartIndices[curr_idx] == -1 && gridCellEndIndices[curr_idx] == -1) {
+                if (gridCellStartIndices[curr_idx] == -1) {
                     continue;
                 }
                 
@@ -582,7 +582,7 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 
                 int curr_idx = gridIndex3Dto1D(i, j, k, gridResolution);
 
-                if (gridCellStartIndices[curr_idx] == -1 && gridCellEndIndices[curr_idx] == -1) {
+                if (gridCellStartIndices[curr_idx] == -1) {
                     continue;
                 }
 
