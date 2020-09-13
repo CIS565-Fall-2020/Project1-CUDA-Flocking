@@ -240,7 +240,8 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3* po
       neighbors++;
     }
 
-  perceivedCenter /= neighbors; // compute the perceived center of mass by dividing by the number of neighbors
+  if (neighbors != 0)
+    perceivedCenter /= neighbors; // compute the perceived center of mass by dividing by the number of neighbors
   glm::vec3 velSelf = (perceivedCenter - posSelf) * rule1Scale;
 
   // Rule 2 Separation: boids try to stay a distance d away from each other
@@ -263,7 +264,8 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3* po
       neighbors++;
     }
 
-  perceivedVelocity /= neighbors; // compute the perceived average velocity by dividing by the number of neighbors
+  if (neighbors != 0)
+    perceivedVelocity /= neighbors; // compute the perceived average velocity by dividing by the number of neighbors
   velSelf += perceivedVelocity * rule3Scale;
 
   return velSelf;
@@ -390,7 +392,7 @@ void Boids::stepSimulationNaive(float dt) {
   dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
   kernUpdateVelocityBruteForce<<<fullBlocksPerGrid, blockSize>>>(numObjects, dev_pos, dev_vel1, dev_vel2);
   checkCUDAErrorWithLine("kernUpdateVelocityBruteForce failed!");
-  kernUpdatePos <<<fullBlocksPerGrid, blockSize >>> (numObjects, dt, dev_pos, dev_vel2);
+  kernUpdatePos <<<fullBlocksPerGrid, blockSize>>> (numObjects, dt, dev_pos, dev_vel2);
   checkCUDAErrorWithLine("kernUpdatePos failed!");
   // TODO-1.2 ping-pong the velocity buffers
   cudaMemcpy(dev_vel1, dev_vel2, numObjects * sizeof(glm::vec3), cudaMemcpyDeviceToDevice);
