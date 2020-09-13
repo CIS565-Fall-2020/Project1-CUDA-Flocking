@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include "utilityCore.hpp"
 #include "kernel.h"
+#include "device_launch_parameters.h"
+
 
 // LOOK-2.1 potentially useful for doing grid-based neighbor search
 #ifndef imax
@@ -241,10 +243,49 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
 * For each of the `N` bodies, update its position based on its current velocity.
 */
 __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
-  glm::vec3 *vel1, glm::vec3 *vel2) {
-  // Compute a new velocity based on pos and vel1
-  // Clamp the speed
-  // Record the new velocity into vel2. Question: why NOT vel1?
+    glm::vec3 *vel1, glm::vec3 *vel2) {
+    // Compute a new velocity based on pos and vel1
+    int idx = threadIdx.x + (blockIdx.x * blockDim.x);
+    glm::vec3 separate(0.0f, 0.0f, 0.0f);
+    glm::vec3 cohesion(0.0f, 0.0f, 0.0f);
+    glm::vec3 center(0.0f, 0.0f, 0.0f);
+    glm::vec3 boid_pos = pos[idx];
+    int neighbor_count1 = 0;
+    int neighbor_count3 = 0;
+
+    for (int i = 0; i < N; i++) {
+        if (i == idx) { continue; }
+        glm::vec3 neighbor_pos = pos[i];
+        float dist = glm::distance(neighbor_pos, boid_pos);
+        if (dist < rule1Distance) {
+            center += neighbor_pos;
+            neighbor_count1 += 1;
+        }
+        if (dist < rule2Distance) {
+            separate -= (neighbor_pos - boid_pos);
+        }
+        if (dist < rule3Distance) {
+            cohesion += vel1[i];
+            neighbor_count3 += 1;
+        }
+    }
+
+    if (neighbor_count1 > 0) { center /= float(neighbor_count1); }
+    if (neighbor_count3 > 0) { cohesion /= float(neighbor_count3); }
+
+    glm::vec3 new_vel(0.0f, 0.0f, 0.0f);
+    if (neighbor_count1 > 0) { new_vel += (center - boid_pos) * rule1Scale;  }
+    new_vel += (separate * rule2Scale);
+    new_vel += (cohesion * rule3Scale);
+
+    // Clamp the speed
+    float speed = glm::length(new_vel);
+    if (speed > maxSpeed) {
+        new_vel = new_vel * (maxSpeed / speed);
+    }
+
+    // Record the new velocity into vel2. Question: why NOT vel1?
+    vel2[idx] = new_vel;
 }
 
 /**
@@ -347,8 +388,17 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 * Step the entire N-body simulation by `dt` seconds.
 */
 void Boids::stepSimulationNaive(float dt) {
-  // TODO-1.2 - use the kernels you wrote to step the simulation forward in time.
-  // TODO-1.2 ping-pong the velocity buffers
+    // TODO-1.2 - use the kernels you wrote to step the simulation forward in time.
+
+    dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
+    kernUpdateVelocityBruteForce<<<fullBlocksPerGrid, blockSize>>>(numObjects, dev_pos, dev_vel1, dev_vel2);
+    checkCUDAErrorWithLine("kernUpdateVelocityBruteForce failed!");
+    kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
+    checkCUDAErrorWithLine("kernUpdatePos failed!");
+    // TODO-1.2 ping-pong the velocity buffers
+    glm::vec3* tmp = dev_vel1;
+    dev_vel1 = dev_vel2;
+    dev_vel2 = tmp;
 }
 
 void Boids::stepSimulationScatteredGrid(float dt) {
