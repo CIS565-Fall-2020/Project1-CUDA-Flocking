@@ -17,7 +17,13 @@ In this project, we mainly implement a flocking simulation based on the Reynolds
 
 Here shows the demo. Each primitives' RGB color represents the XYZ  of its speed. 
 
-gif link
+First the boids are running mindlessly.
+
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/Boids%20Ugrid%20base.png)
+
+Then it gradually to pull together
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/Boids%20Ugrid%20base.png)
+
 
 
 
@@ -42,7 +48,7 @@ Basically, we implement three methods on searching the neighbours.
 
 The following image would give you a rough idea of how much time these three methods in CUDA kernel would consume in one time step:
 
- images link
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/Boids%20Ugrid%20base.png)
 
 
 
@@ -52,15 +58,17 @@ As required by [instructions](https://github.com/Jack12xl/Project1-CUDA-Flocking
 
 ##### 1. Frame rate change with increasing **# of boids** for naive, scattered uniform grid, and coherent uniform grid (render off)
 
-Image link
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/Boids%20Ugrid%20base.png)
 
+**Observation**: Obviously and intuitively, the frame rate per second drops drastically when the number of boids increase.
 
-
-Conclusion: Obviously and intuitively, the frame rate per second drops drastically when the number of boids increase.
+[Further discussion here]()
 
 ##### 2. Frame rate change with increasing **block size** for naive, scattered uniform grid, and coherent uniform grid( render off )
 
-image link
+**Observation**: The performance goes up as the block size changes from 64 to 128. Then it rarely gets increased too much.  
+
+[Further discussion here]()
 
 # Extra Credit
 
@@ -78,7 +86,7 @@ Actually the our first intuitive idea is exactly to use input given range for se
 
 Here shows the performance figure under different cell width:
 
-image link
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/Boids%20Ugrid%20base.png)
 
 # Questions and Answers
 
