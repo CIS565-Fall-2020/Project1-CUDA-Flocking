@@ -159,7 +159,7 @@ void Boids::initSimulation(int N) {
 	checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
 
 	// LOOK-2.1 computing grid params
-	gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
+	gridCellWidth = 2 * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
 	int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
 	gridSideCount = 2 * halfSideCount;
 
@@ -391,7 +391,7 @@ __global__ void kernIdentifyCellStartEnd(int N, int* particleGridIndices,
 	}
 	int currGridCellIndex = particleGridIndices[index];
 	int prevGridCellIndex = particleGridIndices[index - 1];
-	
+
 	//Check if the neighboring particleGridIndices are the same 
 	if (prevGridCellIndex != currGridCellIndex)
 	{
@@ -696,20 +696,20 @@ void Boids::stepSimulationCoherentGrid(float dt) {
 
 	int N = numObjects;
 	dim3 fullBlocksPerGrid((N + blockSize - 1) / blockSize);
-	dim3 gridResetSize((gridCellCount + blockSize - 1) / blockSize);
+	dim3 fullBlocksPerGridCell((gridCellCount + blockSize - 1) / blockSize);
 
 	//Reset the start indices and end indices buffers to -1 
-	kernResetIntBuffer << <gridResetSize, blockSize >> > (gridCellCount, dev_gridCellStartIndices, -1);
+	kernResetIntBuffer << <fullBlocksPerGridCell, blockSize >> > (gridCellCount, dev_gridCellStartIndices, -1);
 	checkCUDAErrorWithLine("resetting dev_gridCellStartIndices failed ");
 
-	kernResetIntBuffer << <gridResetSize, blockSize >> > (gridCellCount, dev_gridCellEndIndices, -1);
+	kernResetIntBuffer << <fullBlocksPerGridCell, blockSize >> > (gridCellCount, dev_gridCellEndIndices, -1);
 	checkCUDAErrorWithLine("resetting dev_gridCellEndIndices failed ");
-	
+
 	// - Label each particle with its array index as well as its grid index.
 	//   Use 2x width grids
 	kernComputeIndices << <fullBlocksPerGrid, blockSize >> > (N, gridSideCount, gridMinimum, gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
 	checkCUDAErrorWithLine("Computing indices failed ");
-	
+
 	// - Unstable key sort using Thrust. A stable sort isn't necessary, but you
 	//   are welcome to do a performance comparison.
 	thrust::device_ptr<int> dev_thrust_keys(dev_particleGridIndices);
@@ -735,7 +735,7 @@ void Boids::stepSimulationCoherentGrid(float dt) {
 	// - Ping-pong buffers as needed. THIS MAY BE DIFFERENT FROM BEFORE.
 	kernPingPong << <fullBlocksPerGrid, blockSize >> > (N, dev_particleArrayIndices, dev_vel2, dev_vel1);
 	checkCUDAErrorWithLine("Unshuffling velocity boid data failed failed ");
-	
+
 	// - Update positions
 	kernUpdatePos << <fullBlocksPerGrid, blockSize >> > (N, dt, dev_pos, dev_vel1);
 	checkCUDAErrorWithLine("update Position Function Failed");
