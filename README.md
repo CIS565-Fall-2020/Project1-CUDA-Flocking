@@ -11,11 +11,11 @@ Project 1 - Flocking**
 
 ### Analysis
 #### Number of Boids
-![](results/boidsNumber.png)
+![](results/boidsNumber.png)  
 It is apparent that the number boids will affect performance. For the naïve method, we need to iterate all the boids, whose complexity is O(n^2), so the framerate decreases significantly with the increase of the number of boids. For the scattered grid method and the coherent grid method, because of the O(1) neighbor search, the performance is affected slightly.
 
 #### Block Size
-![](results/blockSize.png)
+![](results/blockSize.png)  
 When increasing the block size from 8 to 64, the performance is improved, while from 64 to 256, the framerate is stable. One possible reason is that when the size is less than 32, there are some idle threads in a warp, so the processors are not fully utilized.
 
 #### Scattered Grid VS Coherent Grid
