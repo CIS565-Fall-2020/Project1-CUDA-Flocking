@@ -467,7 +467,11 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     perceivedVel /= numNeighbor3;
     newVel += perceivedVel * rule3Scale;
   }
-  vel2[idx] = clamp(newVel, -maxSpeed, maxSpeed);
+  float speed = glm::length(newVel);
+  if (speed > maxSpeed) {
+      newVel *= maxSpeed / speed;
+  }
+  vel2[idx] = newVel;
 }
 
 __global__ void kernUpdateVelNeighborSearchCoherent(
@@ -542,7 +546,11 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
     newVel += perceivedVel * rule3Scale;
   }
   // - Clamp the speed change before putting the new speed in vel2
-  vel2[idx] = clamp(newVel, -maxSpeed, maxSpeed);
+  float speed = glm::length(newVel);
+  if (speed > maxSpeed) {
+      newVel *= maxSpeed / speed;
+  }
+  vel2[idx] = newVel;
 }
 
 /**
