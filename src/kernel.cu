@@ -251,65 +251,6 @@ void Boids::copyBoidsToVBO(float *vbodptr_positions, float *vbodptr_velocities) 
 ******************/
 
 /**
-* Rule 1: Boids try to fly towards the centre of mass of neighbouring boids
-*/
-__host__ __device__ glm::vec3 rule1(int N, int iSelf, const glm::vec3* pos, const glm::vec3* vel) {
-
-    glm::vec3 perceived_center;
-    int number_of_neighbors;
-
-    for (int i = 0; i < N; i++) {
-        if (i != iSelf && glm::distance(pos[i], pos[iSelf]) < rule1Distance) {
-            perceived_center += pos[i];
-            number_of_neighbors++;
-        }
-    }
-    if (number_of_neighbors == 0) {
-        return glm::vec3(0, 0, 0);
-    }
-
-    perceived_center /= number_of_neighbors;
-    return (perceived_center - pos[iSelf]) * rule1Scale;
-}
-
-/**
-* Rule 2: Boids try to keep a small distance away from other objects (including other boids).
-*/
-__host__ __device__ glm::vec3 rule2(int N, int iSelf, const glm::vec3* pos, const glm::vec3* vel) {
-    glm::vec3 c(0, 0, 0);
-
-    for (int i = 0; i < N; i++) {
-        if (i != iSelf && glm::distance(pos[i], pos[iSelf]) < rule2Distance) {
-            c -= (pos[i] - pos[iSelf]);
-        }
-    }
-    return c * rule2Scale;
-}
-
-/**
-* Rule 3: Boids try to match velocity with near boids.
-*/
-__host__ __device__ glm::vec3 rule3(int N, int iSelf, const glm::vec3* pos, const glm::vec3* vel) {
-
-    glm::vec3 perceived_velocity;
-    int number_of_neighbors;
-
-    for (int i = 0; i < N; i++) {
-        if (i != iSelf && glm::distance(pos[i], pos[iSelf]) < rule3Distance) {
-            perceived_velocity += vel[i];
-            number_of_neighbors++;
-        }
-    }
-    if (number_of_neighbors == 0) {
-        return glm::vec3(0, 0, 0);
-    }
-
-    perceived_velocity /= number_of_neighbors;
-    return perceived_velocity * rule3Scale;
-}
-
-
-/**
 * LOOK-1.2 You can use this as a helper for kernUpdateVelocityBruteForce.
 * __device__ code can be called from a __global__ context
 * Compute the new velocity on the body with index `iSelf` due to the `N` boids
