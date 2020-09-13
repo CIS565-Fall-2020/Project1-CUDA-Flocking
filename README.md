@@ -53,11 +53,25 @@ Since after a few frames, boids are tending to stick together, which could bring
 
 As required, we implement three methods on searching the neighbours.
 
-The following image would give you a rough idea of how much time these three methods in CUDA kernel would consume in one time step:
+The following images would give you a rough idea of how much time these three methods in CUDA kernel would consume in one time step:
+
+
+
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/2_x_baseline.png)
+
+Uniform:
+
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/2_x_uniform.png)
+
+Coherent:
+
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/2_x_coherent.png)
+
+##### In all for comparison:
 
 ![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/Kernal-Update-Velocity-Camparison.svg)
 
-
+This baseline profiler:
 
 #### Experiments
 
