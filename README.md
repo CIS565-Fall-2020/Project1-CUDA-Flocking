@@ -5,7 +5,7 @@ Project 1 - Flocking**
   * [LinkedIn](https://www.linkedin.com/in/li-zheng-1955ba169)
 * Tested on: Windows CUDA10, i5-3600 @ 3.59GHz 16GB, RTX 2060 6GB (personal computer)
 ### Boids Animation
-![Boids](images/boidsGif.GIF)   
+![Boids](images/boidsGif.gif)   
 
 ### Performance Analysis
 ![FPS vs Boids](images/FPSvsBoids.PNG) 
