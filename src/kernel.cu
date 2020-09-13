@@ -41,7 +41,7 @@ void checkCUDAError(const char *msg, int line = -1) {
 *****************/
 
 /*! Block size used for CUDA kernel launch. */
-#define blockSize 128
+#define blockSize 512
 
 // LOOK-1.2 Parameters for the boids algorithm.
 // These worked well in our reference implementation.
@@ -169,6 +169,8 @@ void Boids::initSimulation(int N) {
   // LOOK-2.1 computing grid params
   maxSearchRange = std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
   gridCellWidth = 2.0f * maxSearchRange;
+  /*float lambda = 5.0f;
+  gridCellWidth = std::cbrt(numObjects * lambda);*/
   int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
   gridSideCount = 2 * halfSideCount;
 
@@ -501,10 +503,12 @@ __global__ void kernUpdateVelNeighborSearchScattered(
                 int cell_idx = gridIndex3Dto1D(ix, iy, iz, gridResolution);
                 // - Access each boid in the cell and compute velocity change from
                 //   the boids rules, if this boid is within the neighborhood distance.
-                if (gridCellStartIndices[cell_idx] == emptyCell && gridCellEndIndices[cell_idx] == emptyCell) {
+                int start_idx = gridCellStartIndices[cell_idx];
+                int end_idx = gridCellEndIndices[cell_idx];
+                if (start_idx == emptyCell && end_idx == emptyCell) {
                     continue;
                 }
-                for (int idx = gridCellStartIndices[cell_idx]; idx <= gridCellEndIndices[cell_idx]; idx++) {
+                for (int idx = start_idx; idx <= end_idx; idx++) {
                     int other_boid_idx = particleArrayIndices[idx];
                     if (other_boid_idx == index) {
                         continue;
@@ -650,7 +654,8 @@ void Boids::stepSimulationScatteredGrid(float dt, bool isAligned = false) {
         dev_gridCellStartIndices,
         dev_gridCellEndIndices,
         dev_particleArrayIndices,
-        dev_pos, dev_vel1, dev_vel2);
+        dev_pos, dev_vel1, dev_vel2,
+        isAligned);
   // - Update positions
     kernUpdatePos <<< fullBlocksPerGrid, blockSize >>>(numObjects, dt, dev_pos, dev_vel2);
   // - Ping-pong buffers as needed
