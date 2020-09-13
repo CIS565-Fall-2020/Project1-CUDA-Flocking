@@ -6,8 +6,6 @@
 #include "utilityCore.hpp"
 #include "kernel.h"
 
-#define UNIFORM_GRID_DISTANCE 0
-
 // LOOK-2.1 potentially useful for doing grid-based neighbor search
 #ifndef imax
 #define imax( a, b ) ( ((a) > (b)) ? (a) : (b) )
@@ -39,7 +37,7 @@ void checkCUDAError(const char *msg, int line = -1) {
 *****************/
 
 /*! Block size used for CUDA kernel launch. */
-#define blockSize 128
+#define blockSize 256
 
 // LOOK-1.2 Parameters for the boids algorithm.
 // These worked well in our reference implementation.
@@ -55,6 +53,9 @@ void checkCUDAError(const char *msg, int line = -1) {
 
 /*! Size of the starting area in simulation space. */
 #define scene_scale 100.0f
+
+// use 8 neighbors or 27 
+#define UNIFORM_GRID_DISTANCE 0
 
 /***********************************************
 * Kernel state (pointers are device pointers) *
@@ -532,9 +533,9 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 
     float step = 0.5;
 
-    //#ifndef UNIFORM_GRID_DISTANCE
-    //    step = 1.0;
-    //#endif // !UNIFORM_GRID_DISTANCE
+    #ifndef UNIFORM_GRID_DISTANCE
+        step = 1.0;
+    #endif // !UNIFORM_GRID_DISTANCE
 
     for (int x = imax(0, ix - step); x <= imin(gridResolution - 1, ix + step); x++) {
         for (int y = imax(0, iy - step); y <= imin(gridResolution - 1, iy + step); y++) {
@@ -609,8 +610,8 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   // 2.1
   // Uniform Grid Neighbor search using Thrust sort.
   // In Parallel:
-    int numBoidBlocks = numObjects / blockSize + 1;
-    int numCellBlocks = gridCellCount / blockSize + 1;
+    dim3 numBoidBlocks((numObjects + blockSize - 1) / blockSize);
+    dim3 numCellBlocks((gridCellCount + blockSize - 1) / blockSize);
     // 2.1
     // Uniform Grid Neighbor search using Thrust sort.
     // In Parallel:
@@ -647,8 +648,8 @@ void Boids::stepSimulationCoherentGrid(float dt) {
   // 2.3 - start by copying Boids::stepSimulationNaiveGrid
   // Uniform Grid Neighbor search using Thrust sort on cell-coherent data.
   // In Parallel:
-    int numBoidBlocks = numObjects / blockSize + 1;
-    int numCellBlocks = gridCellCount / blockSize + 1;
+    dim3 numBoidBlocks((numObjects + blockSize - 1) / blockSize);
+    dim3 numCellBlocks((gridCellCount + blockSize - 1) / blockSize);
     // - label each particle with its array index as well as its grid index.
     //   Use 2x width grids.
     kernComputeIndices << <numBoidBlocks, blockSize >> > (
