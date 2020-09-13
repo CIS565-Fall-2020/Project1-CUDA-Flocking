@@ -38,6 +38,6 @@ When turning on the visualization, the performance of each implementation suffer
 ![](./images/checkingCell.JPG)
 
 ### Time measurement
-A general time measurement for three method is shown below.
+A general time measurement for these three methods is shown below.
 
 ![](./images/time.JPG)
