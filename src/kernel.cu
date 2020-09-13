@@ -452,9 +452,9 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   glm::vec3 perceivedVel(0.0f, 0.0f, 0.0f);
   int numNeighbors3 = 0;
 
-  for (int i = minCell.x + boidGridCellFloor.x; i <= maxCell.x + boidGridCellFloor.x; i++) {
+  for (int k = minCell.z + boidGridCellFloor.z; k <= maxCell.z + boidGridCellFloor.z; k++) {
     for (int j = minCell.y + boidGridCellFloor.y; j <= maxCell.y + boidGridCellFloor.y; j++) {
-      for (int k = minCell.z + boidGridCellFloor.z; k <= maxCell.z + boidGridCellFloor.z; k++) {
+      for (int i = minCell.x + boidGridCellFloor.x; i <= maxCell.x + boidGridCellFloor.x; i++) {
         int boidBCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
         if (gridCellStartIndices[boidBCellIndex] > -1) {
           for (int b = gridCellStartIndices[boidBCellIndex]; b <= gridCellEndIndices[boidBCellIndex]; b++) {
@@ -502,18 +502,13 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 __global__ void kernRearrangeParticleData (
   int N, glm::vec3* pos1, glm::vec3* pos2, glm::vec3* vel1, glm::vec3* vel2,
   int* particleArrayIndices) {
-  int boidInitIndex = (blockIdx.x * blockDim.x) + threadIdx.x;
-  if (boidInitIndex >= N) {
+  int boidIndex = (blockIdx.x * blockDim.x) + threadIdx.x;
+  if (boidIndex >= N) {
     return;
   }
-  for (int i = 0; i < N; i++) {
-    int newDataIndex = particleArrayIndices[i];
-    if (newDataIndex == boidInitIndex) {
-      pos2[i] = pos1[boidInitIndex];
-      vel2[i] = vel1[boidInitIndex];
-      break;
-    }
-  }
+  int newDataIndex = particleArrayIndices[boidIndex];
+  pos2[boidIndex] = pos1[newDataIndex];
+  vel2[boidIndex] = vel1[newDataIndex];
 }
 
 __global__ void kernUpdateVelNeighborSearchCoherent(
@@ -564,9 +559,9 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
   glm::vec3 perceivedVel(0.0f, 0.0f, 0.0f);
   int numNeighbors3 = 0;
 
-  for (int i = minCell.x + boidGridCellFloor.x; i <= maxCell.x + boidGridCellFloor.x; i++) {
+  for (int k = minCell.z + boidGridCellFloor.z; k <= maxCell.z + boidGridCellFloor.z; k++) {
     for (int j = minCell.y + boidGridCellFloor.y; j <= maxCell.y + boidGridCellFloor.y; j++) {
-      for (int k = minCell.z + boidGridCellFloor.z; k <= maxCell.z + boidGridCellFloor.z; k++) {
+      for (int i = minCell.x + boidGridCellFloor.x; i <= maxCell.x + boidGridCellFloor.x; i++) {
         int boidBCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
         if (gridCellStartIndices[boidBCellIndex] > -1) {
           for (int boidBIndex = gridCellStartIndices[boidBCellIndex]; boidBIndex <= gridCellEndIndices[boidBCellIndex]; boidBIndex++) {
