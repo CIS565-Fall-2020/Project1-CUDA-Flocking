@@ -1316,10 +1316,20 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 * Step the entire N-body simulation by `dt` seconds.
 */
 void Boids::stepSimulationNaive(float dt) {
+    //cudaEvent_t start, stop;
+    //cudaEventCreate(&start);
+    //cudaEventCreate(&stop);
     dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
   // TODO-1.2 - use the kernels you wrote to step the simulation forward in time.
+    //cudaEventRecord(start);
     kernUpdateVelocityBruteForce << <fullBlocksPerGrid, blockSize >> > (numObjects, dev_pos, dev_vel1, dev_vel2);
     kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
+    //cudaEventRecord(stop);
+
+    //cudaEventSynchronize(stop);
+    //float milliseconds = 0;
+    //cudaEventElapsedTime(&milliseconds, start, stop);
+    //std::cout << milliseconds << std::endl;
   // TODO-1.2 ping-pong the velocity buffers
     std::swap(dev_vel1, dev_vel2);
 }
@@ -1327,10 +1337,14 @@ void Boids::stepSimulationNaive(float dt) {
 void Boids::stepSimulationScatteredGrid(float dt) {
   // TODO-2.1
   // Uniform Grid Neighbor search using Thrust sort.
+    //cudaEvent_t start, stop;
+    //cudaEventCreate(&start);
+    //cudaEventCreate(&stop);
     dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
     // In Parallel:
     // - label each particle with its array index as well as its grid index.
     //   Use 2x width grids.
+    //cudaEventRecord(start);
     kernComputeIndices << <fullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
     // - Unstable key sort using Thrust. A stable sort isn't necessary, but you
   //   are welcome to do a performance comparison.
@@ -1356,6 +1370,11 @@ void Boids::stepSimulationScatteredGrid(float dt) {
     }
   // - Update positions
     kernUpdatePos << <fullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos, dev_vel2);
+    //cudaEventRecord(stop);
+    //cudaEventSynchronize(stop);
+    //float milliseconds = 0;
+    //cudaEventElapsedTime(&milliseconds, start, stop);
+    //std::cout << milliseconds << std::endl;
   // - Ping-pong buffers as needed
     std::swap(dev_vel1, dev_vel2);
 }
@@ -1376,10 +1395,14 @@ __global__ void kernRearrangeBuffers(
 void Boids::stepSimulationCoherentGrid(float dt) {
   // TODO-2.3 - start by copying Boids::stepSimulationNaiveGrid
   // Uniform Grid Neighbor search using Thrust sort on cell-coherent data.
+    //cudaEvent_t start, stop;
+    //cudaEventCreate(&start);
+    //cudaEventCreate(&stop);
     dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
   // In Parallel:
   // - Label each particle with its array index as well as its grid index.
   //   Use 2x width grids
+    //cudaEventRecord(start);
     kernComputeIndices << <fullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
   // - Unstable key sort using Thrust. A stable sort isn't necessary, but you
   //   are welcome to do a performance comparison.
@@ -1405,6 +1428,11 @@ void Boids::stepSimulationCoherentGrid(float dt) {
     }
   // - Update positions
     kernUpdatePos << <fullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos_sorted, dev_vel2_sorted);
+    //cudaEventRecord(stop);
+    //cudaEventSynchronize(stop);
+    //float milliseconds = 0;
+    //cudaEventElapsedTime(&milliseconds, start, stop);
+    //std::cout << milliseconds << std::endl;
   // - Ping-pong buffers as needed. THIS MAY BE DIFFERENT FROM BEFORE.
     std::swap(dev_pos_sorted, dev_pos);
     std::swap(dev_vel1_sorted, dev_vel2_sorted);
