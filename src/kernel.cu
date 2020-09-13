@@ -351,7 +351,7 @@ __global__ void kernComputeIndices(int N, int gridResolution,
   glm::vec3 posSelf = pos[index];
   posSelf = glm::floor(posSelf - gridMin) * inverseCellWidth;
   gridIndices[index] = gridIndex3Dto1D(posSelf.x, posSelf.y, posSelf.z, gridResolution);
-
+  indices[index] = index;
 }
 
 // LOOK-2.1 Consider how this could be useful for indicating that a cell
@@ -369,13 +369,19 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
   // Identify the start point of each cell in the gridIndices array.
   // This is basically a parallel unrolling of a loop that goes
   // "this index doesn't match the one before it, must be a new cell!"
+
+  // at this point particleGridIndices should be sorted
   int prev = particleGridIndices[0];
+  gridCellStartIndices[prev] = 0;
   for (int i = 1; i < N; i++) {
     int curr = particleGridIndices[i];
     if (prev != curr) {
-      gridCellStartIndices[i - 1] = 
+      gridCellEndIndices[prev] = i - 1;
+      gridCellStartIndices[curr] = i;
     }
+    prev = curr;
   }
+  gridCellEndIndices[particleGridIndices[N - 1]] = N - 1;
 }
 
 __global__ void kernUpdateVelNeighborSearchScattered(
