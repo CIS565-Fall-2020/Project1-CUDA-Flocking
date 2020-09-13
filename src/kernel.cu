@@ -378,8 +378,8 @@ __global__ void kernResetIntBuffer(int N, int *intBuffer, int value) {
 __global__ void kernReshuffleParticleArray(int N, int *key, glm::vec3 *posArray, glm::vec3 *posArrayTemp, glm::vec3 *velArray, glm::vec3 *velArrayTemp) {
   int index = (blockIdx.x * blockDim.x) + threadIdx.x;
   if (index >= N) return;
-  posArray[index] = posArrayTemp[key[index]];
-  velArray[index] = velArrayTemp[key[index]];
+  posArrayTemp[index] = posArray[key[index]];
+  velArrayTemp[index] = velArray[key[index]];
 }
 
 __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
@@ -634,10 +634,11 @@ void Boids::stepSimulationCoherentGrid(float dt) {
   // - BIG DIFFERENCE: use the rearranged array index buffer to reshuffle all
   //   the particle data in the simulation array.
   //   CONSIDER WHAT ADDITIONAL BUFFERS YOU NEED
-  cudaMemcpy(dev_pos2, dev_pos, sizeof(glm::vec3) * numObjects, cudaMemcpyDeviceToDevice);
   kernReshuffleParticleArray<<<boidBlocks, blockSize>>>(numObjects, dev_particleArrayIndices, dev_pos, dev_pos2, dev_vel1, dev_vel2);
   checkCUDAErrorWithLine("kernReshuffleParticleArray failed");
-
+  cudaMemcpy(dev_pos, dev_pos2, sizeof(glm::vec3) * numObjects, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(dev_vel1, dev_vel2, sizeof(glm::vec3) * numObjects, cudaMemcpyDeviceToDevice);
+ 
   // - Perform velocity updates using neighbor search
   kernUpdateVelNeighborSearchCoherent<<<boidBlocks, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
     dev_gridCellStartIndices, dev_gridCellEndIndices, dev_pos, dev_vel1, dev_vel2);
@@ -646,6 +647,8 @@ void Boids::stepSimulationCoherentGrid(float dt) {
   // - Update positions
   kernUpdatePos<<<boidBlocks, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
   checkCUDAErrorWithLine("kernUpdatePos failed");
+
+  cudaMemcpy(dev_vel1, dev_vel2, numObjects * sizeof(glm::vec3), cudaMemcpyDeviceToDevice);
 }
 
 void Boids::endSimulation() {
