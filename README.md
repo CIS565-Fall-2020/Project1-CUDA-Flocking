@@ -39,8 +39,8 @@ In this project, we manage to fulfill all the requirements:
 
 And extra points:
 
-	1. shared memory(not implemented yet)
- 	2. grid loop optimization
+	1. shared memory: try to speed up the updateVelocity kernel
+ 	2. grid loop optimization: use adaptable neighbor searching 
 
 # Performance analysis
 
@@ -101,7 +101,40 @@ Here goes the extra points part.
 
 #### Optimization with shared memory
 
-Paper citation: 
+The shared memory is inpired by Paper : 
+
+- A Parallel Algorithm for Construction of Uniform Grids
+
+Basically, we define a flag 
+
+```c++
+# define useSharedMemory
+```
+
+To decide whether the program would use shared memory. 
+
+But honestly, shared memory here does not contribute essential performance increasement in my implementation. 
+
+- It only share the global position variable.
+  - The reason why we only do this is because in **kernUpdateVelNeighborSearchScattered**, it is very hard to implement the shared memory since the kernel fetches memory from index( in other cell ) we do not know in advance. So we can not easily make the corresponding memory **shared** ahead of fetching it.
+  - Also, since other kernel does not occupy considerable run time compared with this kernel, so adding shared memory to other kernel theoretically would not bring essential performance lift as well.
+
+And using shared memory more constraints.
+
+- The number of boids should be a multiple of 32(warp thread number ), or theoretically the threads would not **__syncthreads()** successfully. Since in this kernel, we clamp the index if the index is bigger than expected number of boids.
+- But empirically in my test, the program could run nonetheless... 😂
+
+Here shows the result:
+
+Without shared memory:
+
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/performance_block.svg)
+
+With shared memory
+
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/performance_block.svg)
+
+So in summary, we only implement a program with shared memory implemented, which merely have the a bit more performance lift than the version without. 
 
 #### Grid-Looping Optimization
 

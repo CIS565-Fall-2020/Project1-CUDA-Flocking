@@ -41,7 +41,7 @@ void checkCUDAError(const char *msg, int line = -1) {
 *****************/
 
 /*! Block size used for CUDA kernel launch. */
-#define blockSize 512
+#define blockSize 256
 
 // LOOK-1.2 Parameters for the boids algorithm.
 // These worked well in our reference implementation.
@@ -60,6 +60,7 @@ void checkCUDAError(const char *msg, int line = -1) {
 
  //Jack12 add
 #define emptyCell -1
+#define useSharedMemory
 
 /***********************************************
 * Kernel state (pointers are device pointers) *
@@ -477,7 +478,21 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     if (index >= N) {
         return;
     }
+
+#ifdef useSharedMemory
+    int t = threadIdx.x;
+    extern __shared__ glm::vec3 share_pos[];
+    if (isAligned) {
+
+    }
+    share_pos[t] = pos[index];
+    __syncthreads();
+    glm::vec3 cur_pos = share_pos[t];
+#else
     glm::vec3 cur_pos = pos[index];
+#endif // useSharedMemory
+
+    
   // - Identify the grid cell that this particle is in
     glm::vec3 cur_pos_2_origin = cur_pos - gridMin;
     glm::ivec3 cur_cell_idx = cur_pos_2_origin * inverseCellWidth;
@@ -517,8 +532,8 @@ __global__ void kernUpdateVelNeighborSearchScattered(
                     /*touched_particle++;*/
                     glm::vec3 other_pos;
                     glm::vec3 other_vel;
-                    if (!isAligned) {
-                        other_pos = pos[other_boid_idx];
+                    if (!isAligned) {                 
+                        other_pos = pos[other_boid_idx];                     
                         other_vel = vel1[other_boid_idx];
                     }
                     else {
@@ -549,7 +564,11 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     
     if (num_1_neighbors != 0) {
         tmp1 /= num_1_neighbors;
+#ifdef useSharedMemory
+        tmp1 -= share_pos[t];
+#else
         tmp1 -= pos[index];
+#endif
     }
     else {
         tmp1 = glm::vec3(0.0f);
@@ -644,9 +663,10 @@ void Boids::stepSimulationScatteredGrid(float dt, bool isAligned = false) {
         dev_gridCellStartIndices,
         dev_gridCellEndIndices);
   // - Perform velocity updates using neighbor search
-    kernUpdateVelNeighborSearchScattered<<<fullBlocksPerGrid, blockSize>>>(
-        numObjects, 
-        gridSideCount, 
+#ifdef useSharedMemory
+    kernUpdateVelNeighborSearchScattered << <fullBlocksPerGrid, blockSize, blockSize * sizeof(glm::vec3)>> > (
+        numObjects,
+        gridSideCount,
         gridMinimum,
         gridInverseCellWidth,
         gridCellWidth,
@@ -656,6 +676,21 @@ void Boids::stepSimulationScatteredGrid(float dt, bool isAligned = false) {
         dev_particleArrayIndices,
         dev_pos, dev_vel1, dev_vel2,
         isAligned);
+#else
+    kernUpdateVelNeighborSearchScattered << <fullBlocksPerGrid, blockSize >> > (
+        numObjects,
+        gridSideCount,
+        gridMinimum,
+        gridInverseCellWidth,
+        gridCellWidth,
+        maxSearchRange,
+        dev_gridCellStartIndices,
+        dev_gridCellEndIndices,
+        dev_particleArrayIndices,
+        dev_pos, dev_vel1, dev_vel2,
+        isAligned);
+#endif
+    
   // - Update positions
     kernUpdatePos <<< fullBlocksPerGrid, blockSize >>>(numObjects, dt, dev_pos, dev_vel2);
   // - Ping-pong buffers as needed

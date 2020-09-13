@@ -20,7 +20,7 @@
 #define MAX_FRAME 16192
 
 // LOOK-1.2 - change this to adjust particle count in the simulation
-const int N_FOR_VIS = 10000;
+const int N_FOR_VIS = 6000;
 const float DT = 0.2f;
 
 /**
