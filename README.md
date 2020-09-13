@@ -9,4 +9,4 @@ Project 1 - Flocking**
 
 * Boid simulation running in Coherent Uniform Grid mode - 50000 particles (FPS capped to 35):
 
-![Coherent mode gif](images/coherent.gif)
+![Coherent mode gif](images/coherent_50000.gif)
