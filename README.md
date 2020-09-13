@@ -115,8 +115,8 @@ To decide whether the program would use shared memory.
 
 But honestly, shared memory here does not contribute essential performance increasement in my implementation. 
 
-- It only share the global position variable.
-  - The reason why we only do this is because in **kernUpdateVelNeighborSearchScattered**, it is very hard to implement the shared memory since the kernel fetches memory from index( in other cell ) we do not know in advance. So we can not easily make the corresponding memory **shared** ahead of fetching it.
+- It only shares the global position variable, which is only accessed in shared memory form twice.
+  - The reason why we only reach this is because in **kernUpdateVelNeighborSearchScattered**, it is very hard to implement the shared memory since the kernel fetches memory from index( in other cell ) we do not know in advance. So we can not easily make the corresponding memory **shared** ahead of fetching it.
   - Also, since other kernel does not occupy considerable run time compared with this kernel, so adding shared memory to other kernel theoretically would not bring essential performance lift as well.
 
 And using shared memory more constraints.
@@ -128,11 +128,11 @@ Here shows the result:
 
 Without shared memory:
 
-![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/performance_block.svg)
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/no_share_memory.png)
 
 With shared memory
 
-![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/performance_block.svg)
+![alt text](https://github.com/Jack12xl/Project1-CUDA-Flocking/blob/master/images/with_shared_memory.png)
 
 So in summary, we only implement a program with shared memory implemented, which merely have the a bit more performance lift than the version without. 
 
