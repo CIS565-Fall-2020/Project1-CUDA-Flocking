@@ -159,7 +159,7 @@ void Boids::initSimulation(int N) {
   checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
 
   // LOOK-2.1 computing grid params
-  gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
+  gridCellWidth = 1.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
   int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
   gridSideCount = 2 * halfSideCount;
 
@@ -353,12 +353,22 @@ __global__ void kernComputeIndices(int N, int gridResolution,
     // - Label each boid with the index of its grid cell.
     // - Set up a parallel array of integer indices as pointers to the actual
     //   boid data in pos and vel1/vel2
+	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+	if (index >= N) {
+		return;
+	}
+	glm::vec3 offset = glm::floor((pos[index] - gridMin) * inverseCellWidth);
+	int gridIndex = gridIndex3Dto1D(offset.x, offset.y, offset.z, gridResolution);
+	indices[index] = index;
+	gridIndices[index] = gridIndex;
+	/*
 	for (int i = 0; i < N; i++) {
 		glm::vec3 offset = glm::floor((pos[i] - gridMin) * inverseCellWidth);
 		int gridIndex = gridIndex3Dto1D(offset.x, offset.y, offset.z, gridResolution);
 		indices[i] = i;
 		gridIndices[i] = gridIndex;
 	}
+	*/
 }
 
 // LOOK-2.1 Consider how this could be useful for indicating that a cell
@@ -376,6 +386,22 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
   // Identify the start point of each cell in the gridIndices array.
   // This is basically a parallel unrolling of a loop that goes
   // "this index doesn't match the one before it, must be a new cell!"
+	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+	if (index >= N) {
+		return;
+	}
+	int x = particleGridIndices[index];
+	if (index == 0) {
+		gridCellStartIndices[x] = 0;
+	}
+	else {
+		int prev = particleGridIndices[index - 1];
+		if (x != prev) {
+			gridCellEndIndices[prev] = index - 1;
+			gridCellStartIndices[x] = index;
+		}
+	}
+	/*
 	int prev = -1;
 	for (int i = 0; i < N; i++) {
 		if (particleGridIndices[i] != prev) {
@@ -386,6 +412,7 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
 			gridCellStartIndices[prev] = i;
 		}
 	}
+	*/
 }
 
 __global__ void kernReorderData(int N, int *particleArrayIndices,
