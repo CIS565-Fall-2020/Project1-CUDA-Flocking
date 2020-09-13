@@ -14,11 +14,14 @@
 
 // LOOK-2.1 LOOK-2.3 - toggles for UNIFORM_GRID and COHERENT_GRID
 #define VISUALIZE 1
-#define UNIFORM_GRID 0
+#define UNIFORM_GRID 1
 #define COHERENT_GRID 0
 
 // LOOK-1.2 - change this to adjust particle count in the simulation
-const int N_FOR_VIS = 5000;
+// Uniform grid: const int N_FOR_VIS = 200000; ~= 70FPS
+// Navie: const int N_FOR_VIS = 50000; ~= 40FPS
+// TODO-2.2: It looks like the increased grid width can improve the efficiency.
+const int N_FOR_VIS = 50000;
 const float DT = 0.2f;
 
 /**
@@ -217,6 +220,10 @@ void initShaders(GLuint * program) {
     double timebase = 0;
     int frame = 0;
 
+    double total_fps = 0;
+    double start_time = glfwGetTime();
+    int total_frame = 0;
+
     Boids::unitTest(); // LOOK-1.2 We run some basic example code to make sure
                        // your CUDA development setup is ready to go.
 
@@ -224,6 +231,9 @@ void initShaders(GLuint * program) {
       glfwPollEvents();
 
       frame++;
+
+      total_frame++;
+
       double time = glfwGetTime();
 
       if (time - timebase > 1.0) {
@@ -233,6 +243,12 @@ void initShaders(GLuint * program) {
       }
 
       runCUDA();
+
+      if (total_frame == 5000) {
+          double end_time = glfwGetTime();
+          double avg_fps = total_frame / (end_time - start_time);
+          std::cout << "avg fps:" << avg_fps << std::endl;
+      }
 
       std::ostringstream ss;
       ss << "[";
