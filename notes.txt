@@ -1,3 +1,6 @@
+The implosion and strange behavior was somehow fixed by adding the change in velocity computation to the old
+velocity which i did not notics had to be done
+
 
 How to change the tab size in Visual Studio...
 Visual Studio
