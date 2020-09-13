@@ -482,9 +482,6 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 #ifdef useSharedMemory
     int t = threadIdx.x;
     extern __shared__ glm::vec3 share_pos[];
-    if (isAligned) {
-
-    }
     share_pos[t] = pos[index];
     __syncthreads();
     glm::vec3 cur_pos = share_pos[t];
