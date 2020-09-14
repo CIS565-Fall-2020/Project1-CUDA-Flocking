@@ -159,7 +159,7 @@ void Boids::initSimulation(int N) {
   checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
 
   // LOOK-2.1 computing grid params
-  gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
+  gridCellWidth = std::max(std::max(rule1Distance, rule2Distance), rule3Distance); // * 2.0f
   int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
   gridSideCount = 2 * halfSideCount;
 
@@ -312,6 +312,8 @@ __global__ void kernUpdatePos(int N, float dt, glm::vec3 *pos, glm::vec3 *vel) {
     return;
   }
   glm::vec3 thisPos = pos[index];
+  glm::vec3 v = vel[index];
+  float3 tmp_vel = make_float3(v.x, v.y, v.z);
   thisPos += vel[index] * dt;
 
   // Wrap the boids around so we don't lose them
@@ -340,9 +342,9 @@ __forceinline__ __device__ int pointToGridIdx(glm::vec3* pos, glm::vec3* gridMin
     float inverseCellWidth, int gridResolution, int idx) {
     
     glm::vec3 offset = pos[idx] - *gridMin;
-    int gridX = (int)(offset.x * inverseCellWidth);
-    int gridY = (int)(offset.y * inverseCellWidth);
-    int gridZ = (int)(offset.z * inverseCellWidth);
+    int gridX = int(offset.x * inverseCellWidth);
+    int gridY = int(offset.y * inverseCellWidth);
+    int gridZ = int(offset.z * inverseCellWidth);
 
     return gridIndex3Dto1D(gridX, gridY, gridZ, gridResolution);
 }
@@ -383,7 +385,7 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
     int next_idx = particleGridIndices[idx + 1];
     if (prev_idx != next_idx) {
         gridCellStartIndices[next_idx] = idx + 1;
-        gridCellEndIndices[next_idx] = idx + 1;
+        gridCellEndIndices[prev_idx] = idx + 1;
     }
 }
 
@@ -472,6 +474,7 @@ void Boids::stepSimulationScatteredGrid(float dt) {
     // TODO-2.1
     // Uniform Grid Neighbor search using Thrust sort.
     dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
+    dim3 fullBlocksPerCell((gridCellCount + blockSize - 1) / blockSize);
     // In Parallel:
     // - label each particle with its array index as well as its grid index.
     //   Use 2x width grids.
@@ -485,14 +488,14 @@ void Boids::stepSimulationScatteredGrid(float dt) {
     
     // - Naively unroll the loop for finding the start and end indices of each
     //   cell's data pointers in the array of boid indices
-    kernResetIntBuffer<<<fullBlocksPerGrid, blockSize>>>(numObjects, dev_gridCellStartIndices, -1);
+    kernResetIntBuffer<<<fullBlocksPerCell, blockSize>>>(gridCellCount, dev_gridCellStartIndices, -1);
     checkCUDAErrorWithLine("kernResetIntBuffer failed!");
     kernIdentifyCellStartEnd<<<fullBlocksPerGrid, blockSize>>>(numObjects, dev_particleGridIndices,
         dev_gridCellStartIndices, dev_gridCellEndIndices);
     checkCUDAErrorWithLine("kernIdentifyCellStartEnd failed!");
 
     // - Perform velocity updates using neighbor search
-    kernUpdateVelNeighborSearchScattered<<<fullBlocksPerGrid, blockSize >>>(numObjects, gridCellCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
+    kernUpdateVelNeighborSearchScattered<<<fullBlocksPerGrid, blockSize >>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
         gridCellCount, dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices,
         dev_pos, dev_vel1, dev_vel2);
     checkCUDAErrorWithLine("kernUpdateVelNeighborSearchScattered failed!");
