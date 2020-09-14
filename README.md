@@ -13,6 +13,9 @@ Tested on personal computer - Microsoft Windows 10 Pro,
 Processor : Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz, 2601 Mhz, 6 Core(s), 12 Logical Processor(s) 
 GPU : NVIDIA GeForce RTX 2060
 
+## OUTPUT 
+![500 K Boids using Coherent grid](images/boids500k_final.gif)
+
 ## CUDA FLOCKING 
 
 ### Boids with Naive Neighbor Search - BruteForce Method 
