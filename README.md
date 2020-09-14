@@ -1,4 +1,4 @@
-<h1> CUDA Flocking Simulation with Reynold Boids Algorithm
+#<h1> CUDA Flocking Simulation with Reynold Boids Algorithm
 ![top](images/top_image.png)
 
 **University of Pennsylvania, CIS 565: GPU Programming and Architecture,
