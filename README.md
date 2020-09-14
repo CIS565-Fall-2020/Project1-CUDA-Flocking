@@ -18,7 +18,7 @@ GPU : NVIDIA GeForce RTX 2060
 
 ![500 K Boids using Coherent grid](images/boids500k_final.gif)
 
-*100,000 Boids using Coherent Grid 
+* 100,000 Boids using Coherent Grid 
 
 ![100 K Boids using Coherent grid](images/boids100k_final.gif)
 
@@ -179,18 +179,30 @@ We can see that using the cell size : 2 * neighboring dist works well with the s
 * For each implementation, how does changing the number of boids affect
 performance? Why do you think this is?
 
-The performance decreases as we increase the no. of boids. As the count increases, the system has to perform more and more checks and hence we see a drop in fps consistently. We can improve the performance by using spatial data structures like uniform grid and coherent grid. Also, using a very low count of boids is also not ideal since the overhead of setting up the gpu pipeline and running the process in parallel overweighs the increase in efficiency. According to me, goid count of 5K to 50K works best for this algorithm. However, higher the no. of boids, lower the performance. 
+The performance decreases as we increase the no. of boids. As the count increases, the system has to perform more and more checks and 
+hence we see a drop in fps consistently. We can improve the performance by using spatial data structures like uniform grid and coherent grid. 
+Also, using a very low count of boids is also not ideal since the overhead of setting up the gpu pipeline and running the process in parallel 
+overweighs the increase in efficiency. According to me, goid count of 5K to 50K works best for this algorithm. However, higher the no. of boids, 
+lower the performance. 
 
 * For each implementation, how does changing the block count and block size
 affect performance? Why do you think this is?
-Changing the block size and count doesn't alter the performance too much. The fps for all 3 methods is almost consistent when using block sizes 128, 256, 512 and 1024. This is because the no. of threads running are the same (32 since it is the warp size) for each of these block sizes. 
+
+Changing the block size and count doesn't alter the performance too much. The fps for all 3 methods is almost consistent when using block sizes 128, 256, 512 and 1024. 
+This is because the no. of threads running are the same (32 since it is the warp size) for each of these block sizes. 
 
 * For the coherent uniform grid: did you experience any performance improvements
 with the more coherent uniform grid? Was this the outcome you expected?
 Why or why not?
-Yes, the coherent grid improves the performance compared to the original uniform grid. This is an expected outcome since we remove the extra step of looking for the position and velocity using particleArrayIndices for all the boids in neighboring gridcells which fall under the search radius. Instead, we arrange the position and velocities by grouping them based on the gridcell the boid is in so they are in a continuous array. 
+
+Yes, the coherent grid improves the performance compared to the original uniform grid. This is an expected outcome since we remove the extra step of 
+looking for the position and velocity using particleArrayIndices for all the boids in neighboring gridcells which fall under the search radius. 
+Instead, we arrange the position and velocities by grouping them based on the gridcell the boid is in so they are in a continuous array. 
 
 * Did changing cell width and checking 27 vs 8 neighboring cells affect performance?
 Why or why not? Be careful: it is insufficient (and possibly incorrect) to say
 that 27-cell is slower simply because there are more cells to check!
-Both using 27 and 8 neighboring cells gives an almost similar result for smaller counts of boids. As we get to higher counts, say 100,000 as shown in the graph, performance is higher when checking 27 cells. A the cell size for the 8 cells is higher, it takes longer to determine the neighboring cells compared to looping over smaller sized 27 cells. 
+
+Both using 27 and 8 neighboring cells gives an almost similar result for smaller counts of boids. As we get to higher counts, 
+say 100,000 as shown in the graph, performance is higher when checking 27 cells. A the cell size for the 8 cells is higher, 
+it takes longer to determine the neighboring cells compared to looping over smaller sized 27 cells. 
