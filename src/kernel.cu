@@ -66,27 +66,27 @@ dim3 threadsPerBlock(blockSize);
 // Consider why you would need two velocity buffers in a simulation where each
 // boid cares about its neighbors' velocities.
 // These are called ping-pong buffers.
-glm::vec3 *dev_pos;
-glm::vec3 *dev_vel1;
-glm::vec3 *dev_vel2;
+glm::vec3* dev_pos;
+glm::vec3* dev_vel1;
+glm::vec3* dev_vel2;
 
 // LOOK-2.1 - these are NOT allocated for you. You'll have to set up the thrust
 // pointers on your own too.
 
 // For efficient sorting and the uniform grid. These should always be parallel.
-int *dev_particleArrayIndices; // What index in dev_pos and dev_velX represents this particle?
-int *dev_particleGridIndices; // What grid cell is this particle in?
+int* dev_particleArrayIndices; // What index in dev_pos and dev_velX represents this particle?
+int* dev_particleGridIndices; // What grid cell is this particle in?
 // needed for use with thrust
 thrust::device_ptr<int> dev_thrust_particleArrayIndices;
 thrust::device_ptr<int> dev_thrust_particleGridIndices;
 
-int *dev_gridCellStartIndices; // What part of dev_particleArrayIndices belongs
-int *dev_gridCellEndIndices;   // to this cell?
+int* dev_gridCellStartIndices; // What part of dev_particleArrayIndices belongs
+int* dev_gridCellEndIndices;   // to this cell?
 
 // TODO-2.3 - consider what additional buffers you might need to reshuffle
 // the position and velocity data to be coherent within cells.
-glm::vec3 *dev_coherentPos;
-glm::vec3 *dev_coherentVel;
+glm::vec3* dev_coherentPos;
+glm::vec3* dev_coherentVel;
 
 // LOOK-2.1 - Grid parameters based on simulation parameters.
 // These are automatically computed for you in Boids::initSimulation
@@ -134,7 +134,7 @@ __global__ void kernGenerateRandomPosArray(int time, int N, glm::vec3* arr, floa
 		arr[index].z = scale * rand.z;
 
 		//float3 tempVal = make_float3(arr[index].x, arr[index].y, arr[index].z); //To check these values while debugging in warp watch instead 
-																				//of having to watch arr in the memory window 
+																				  //of having to watch arr in the memory window 
 	}
 }
 
@@ -515,8 +515,8 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
 
 //Called from stepSimulationCoherentGrid to rearrange Array Index Buffers 
-__global__ void kernRearrange(int N, int* particleArrayIndices, glm::vec3* pos, glm::vec3* vel, glm::vec3* rearrangedPos, glm::vec3* rearrangedVel) 
-{	
+__global__ void kernRearrange(int N, int* particleArrayIndices, glm::vec3* pos, glm::vec3* vel, glm::vec3* rearrangedPos, glm::vec3* rearrangedVel)
+{
 	// Reshuffle pos and vel for continoug memeory access
 	int index = threadIdx.x + blockIdx.x * blockDim.x;
 	if (index >= N)
@@ -527,7 +527,7 @@ __global__ void kernRearrange(int N, int* particleArrayIndices, glm::vec3* pos, 
 }
 
 //Reshuffle the vel buffers 
-__global__ void kernPingPong(int N, int* particleArrayIndices, glm::vec3* vel2, glm::vec3* vel1) 
+__global__ void kernPingPong(int N, int* particleArrayIndices, glm::vec3* vel2, glm::vec3* vel1)
 {
 	int index = threadIdx.x + blockIdx.x * blockDim.x;
 	if (index >= N)
