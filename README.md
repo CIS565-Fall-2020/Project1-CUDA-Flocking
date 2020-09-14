@@ -1,11 +1,28 @@
 **University of Pennsylvania, CIS 565: GPU Programming and Architecture,
 Project 1 - Flocking**
 
-* (TODO) YOUR NAME HERE
-  * (TODO) [LinkedIn](), [personal website](), [twitter](), etc.
-* Tested on: (TODO) Windows 22, i7-2222 @ 2.22GHz 22GB, GTX 222 222MB (Moore 2222 Lab)
+* Jacky Lu
+  * [LinkedIn](https://www.linkedin.com/in/jacky-lu-506968129/)
+* Tested on: Windows 10 Education, i9-9900k @ 3.60GHz 64GB, NVIDIA GeForce RTX 2080 8192MB (Personal)
 
-### (TODO: Your README)
+# README
 
-Include screenshots, analysis, etc. (Remember, this is public, so don't put
-anything here that you don't want to share with the world.)
+## Result:
+* ### Naive Implementation (5,000 Boids & 10,648 Cells)
+![](images/naive_5000_boids_10648_cells.gif)
+* ### Uniform Grid Implementation With Scattered Data [27 Neighboring Cells Search] (5,000 Boids & 10,648 Cells)
+![](images/uniform_27_5000_boids_10648_cells.gif)
+* ### Uniform Grid Implementation With Scattered Data [8 Neighboring Cells Search] (5,000 Boids & 10,648 Cells)
+![](images/uniform_8_5000_boids_10648_cells.gif)
+* ### Uniform Grid Implementation With Coherent Data [27 Neighboring Cells Search] (5,000 Boids & 10,648 Cells)
+![](images/coherent_27_5000_boids_10648_cells.gif)
+* ### Uniform Grid Implementation With Coherent Data [8 Neighboring Cells Search] (5,000 Boids & 10,648 Cells)
+![](images/coherent_8_5000_boids_10648_cells.gif)
+* ### Uniform Grid Implementation With Coherent Data [8 Neighboring Cells Search] (20,000,000 Boids & 64,964,808 Cells)
+![](images/coherent_8_20000000_boids_64964808_cells.gif)
+
+* #### P.S. I wasn't able to perform much performance analysis due to the lack of time because I have been 
+trying to find the bug that crashes my program for the entire weekend. However, as a result of the lengthy debugging 
+process, I was able to have a lot of practice and hands-on experience with the Nsight debugger. I find the Nsight debugger
+very helpful. By tracking global buffer's data in Warp Watch, I was able to locate the unusual data pattern in dev_particleArrayIndices,
+and ultimately found out that I freed the buffers' device memories at the wrong place in the program.
