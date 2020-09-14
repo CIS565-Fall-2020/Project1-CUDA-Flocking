@@ -37,7 +37,7 @@ In the Boids flocking simulation, we have to consider three rules:
 The goal is to search for neighbors of each boid and to calculate the new velocity in terms of the above rules.
 ### Method1: Brute Force
 Firstly, I implemented a naive neighbor search. Suppose we have N boids, we iterate every N - 1 boids. In paralle programming, we can process each boid simultaneously. The following pircture shows the flocking with 5000 boids:
-![](images/naive.png)
+![](images/naive.PNG)
 ### Method2: Scatter
 Recall that any two boids can only influence each other if they are within some neighborhood distance of each other. We can use a datastructure called uniform spatial grid to avoid checking useless boids. A uniform grid is made up of cells that are at least as wide as the neighborhood distance and covers the entire simulation domain. 
 
@@ -53,7 +53,7 @@ Then I follow the steps to implement this method:
 6. Compute the new velocity according to the boids in the grids fount in step 5
 7. Update position
 
-![](images/scatter.png)
+![](images/scatter.PNG)
 ### Method3: Cohesion
 It is not efficient to get position and velocity of each boid with index as I implemented in Method2 because the memory is dicrete. So I can shuffle the postion array and velocity array before searching neighbors. In this way, the program can read memory continueously.
 
@@ -66,16 +66,16 @@ As we can see from the graph below, the cohesion grid uniform performs best and 
 
 In addition, the fps of the grid uniform method drops a little at the beginning. I guess that it costs some time to sort. I am confused that the fps is close to zero when the number of boids is around 100000 but increases later.
 
-![](images/boids1.png)
+![](images/boids1.PNG)
 
 ### FPS vs Number of Boids with visualization
 The fps of the three methods are close at the beginning.  
 
-![](images/boids2.png)
+![](images/boids2.PNG)
 
 ### FPS vs Blocksize without visualization
 
-![](images/boids3.png)
+![](images/boids3.PNG)
 
 ## Questions
 ### For each implementation, how does changing the number of boids affect performance? Why do you think this is?
