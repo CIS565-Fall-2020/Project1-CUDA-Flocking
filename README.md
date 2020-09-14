@@ -44,6 +44,10 @@ This process is data parallel and can be naively parallelized.
 ![buffers for generating a uniform grid using index sort, then making the boid data coherent](images/Boids%20Ugrids%20buffers%20data%20coherent.png)
 
 ## Performace Analysis
-![](images/FPSvsBlockSize_Vis.PNG)
-![](images/FPSvsBoids_NoVis.PNG)
 ![](images/FPSvsBoids_Vis.PNG)
+![](images/FPSvsBoids_NoVis.PNG)
+![](images/FPSvsBlockSize_NoVis.PNG)
+* For each implementation, changing the number of boids means more potential neighbors to be considered.
+* For each implementation, it seems like changing block size does not change the FPS. 
+* For the coherent uniform grid, the FPS is better than that of uniform grid. This is expected because memory is accessed less randomly, which means faster access time. 
+* Changing cell width and checking 27 vs 8 neighboring cells slows down the run time. I can't think of any reasons why besides that there might be fewer cells and neighbors to look through, and hence have to access memory less frequently.
