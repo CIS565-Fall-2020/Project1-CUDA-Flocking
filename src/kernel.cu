@@ -88,7 +88,6 @@ int *dev_gridCellEndIndices;   // to this cell?
 // TODO-2.3 - consider what additional buffers you might need to reshuffle
 // the position and velocity data to be coherent within cells.
 glm::vec3 *dev_pos2;
-glm::vec3 *dev_vel3;
 
 // LOOK-2.1 - Grid parameters based on simulation parameters.
 // These are automatically computed for you in Boids::initSimulation
@@ -196,9 +195,6 @@ void Boids::initSimulation(int N) {
   // 2.3
   cudaMalloc((void**)&dev_pos2, N * sizeof(glm::vec3));
   checkCUDAErrorWithLine("cudaMalloc dev_pos2 failed!");
-
-  cudaMalloc((void**)&dev_vel3, N * sizeof(glm::vec3));
-  checkCUDAErrorWithLine("cudaMalloc dev_vel3 failed!");
 
   cudaDeviceSynchronize();
 }
@@ -557,8 +553,8 @@ __global__ void kernSortPosVel(int N, glm::vec3* pos, glm::vec3* pos2, glm::vec3
     int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (idx >= N) { return; }
     int new_idx = particleArrayIndices[idx];
-    pos2[new_idx] = pos[idx];
-    vel3[new_idx] = vel1[idx];
+    pos2[idx] = pos[new_idx];
+    vel3[idx] = vel1[new_idx];
 }
 /**
 * Step the entire N-body simulation by `dt` seconds.
@@ -569,7 +565,7 @@ void Boids::stepSimulationNaive(float dt) {
     dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
     kernUpdateVelocityBruteForce<<<fullBlocksPerGrid, blockSize>>>(numObjects, dev_pos, dev_vel1, dev_vel2);
     checkCUDAErrorWithLine("kernUpdateVelocityBruteForce failed!");
-    kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel1);
+    kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
     checkCUDAErrorWithLine("kernUpdatePos failed!");
     // TODO-1.2 ping-pong the velocity buffers
     glm::vec3 *tmp = dev_vel1;
@@ -608,7 +604,7 @@ void Boids::stepSimulationScatteredGrid(float dt) {
     checkCUDAErrorWithLine("kernUpdateVelNeighborSearchScattered failed!");
 
     // - Update positions
-    kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel1);
+    kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
     checkCUDAErrorWithLine("kernUpdatePos failed!");
 
     // - Ping-pong buffers as needed
@@ -649,27 +645,20 @@ void Boids::stepSimulationCoherentGrid(float dt) {
     // - BIG DIFFERENCE: use the rearranged array index buffer to reshuffle all
     //   the particle data in the simulation array.
     //   CONSIDER WHAT ADDITIONAL BUFFERS YOU NEED
-    kernSortPosVel<<<fullBlocksPerGrid, blockSize >>>(numObjects, dev_pos, dev_pos2, dev_vel1, dev_vel3, dev_particleArrayIndices);
+    kernSortPosVel<<<fullBlocksPerGrid, blockSize >>>(numObjects, dev_pos, dev_pos2, dev_vel1, dev_vel2, dev_particleArrayIndices);
     checkCUDAErrorWithLine("kernSortPosVel failed!");
 
     // - Perform velocity updates using neighbor search
     kernUpdateVelNeighborSearchCoherent<<<fullBlocksPerGrid, blockSize >>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
         gridCellCount, dev_gridCellStartIndices, dev_gridCellEndIndices, 
-        dev_pos2, dev_vel3, dev_vel2);
+        dev_pos2, dev_vel2, dev_vel1);
     checkCUDAErrorWithLine("kernUpdateVelNeighborSearchScattered failed!");
 
     // - Update positions
-    kernUpdatePos<<<fullBlocksPerGrid, blockSize >>>(numObjects, dt, dev_pos2, dev_vel2);
+    kernUpdatePos<<<fullBlocksPerGrid, blockSize >>>(numObjects, dt, dev_pos2, dev_vel1);
     checkCUDAErrorWithLine("kernUpdatePos failed!");
 
     // - Ping-pong buffers as needed
-    glm::vec3* tmp1 = dev_vel1;
-    glm::vec3* tmp2 = dev_vel2;
-    glm::vec3* tmp3 = dev_vel3;
-
-    dev_vel1 = tmp2;
-    dev_vel2 = tmp1;
-    dev_vel3 = tmp3;
 
     glm::vec3* tmp_pos = dev_pos;
     dev_pos = dev_pos2;
@@ -688,7 +677,6 @@ void Boids::endSimulation() {
   cudaFree(dev_particleGridIndices);
 
   cudaFree(dev_pos2);
-  cudaFree(dev_vel3);
 }
 
 void Boids::unitTest() {
