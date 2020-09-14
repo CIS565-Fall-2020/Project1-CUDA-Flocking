@@ -37,7 +37,7 @@ void checkCUDAError(const char *msg, int line = -1) {
 *****************/
 
 /*! Block size used for CUDA kernel launch. */
-#define blockSize 128
+#define blockSize 1024
 
 // LOOK-1.2 Parameters for the boids algorithm.
 // These worked well in our reference implementation.
@@ -256,7 +256,8 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
     float3 separate = make_float3(0.0f, 0.0f, 0.0f);
     float3 cohesion = make_float3(0.0f, 0.0f, 0.0f);
 
-    int neighborCount = 0;
+    int neighborCount1 = 0;
+    int neighborCount3 = 0;
 
     float3 thisBoidPos = make_float3(pos[iSelf].x, pos[iSelf].y, pos[iSelf].z);
 
@@ -269,7 +270,7 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
             center.x += thatBoidPos.x;
             center.y += thatBoidPos.y;
             center.z += thatBoidPos.z;
-            neighborCount += 1.0;
+            neighborCount1++;
         }
 
         // Rule 2: boids try to stay a distance d away from each other
@@ -283,29 +284,36 @@ __device__ glm::vec3 computeVelocityChange(int N, int iSelf, const glm::vec3 *po
             cohesion.x += vel[i].x;
             cohesion.y += vel[i].y;
             cohesion.z += vel[i].z;
-
+            neighborCount3++;
         }
     }
 
-    if (neighborCount > 0) {
-        center.x /= neighborCount;
-        center.y /= neighborCount;
-        center.z /= neighborCount;
+    glm::vec3 v1(0.0f, 0.0f, 0.0f);
+    glm::vec3 v2 = v1;
+    glm::vec3 v3 = v1;
+    if (neighborCount1 > 0) {
+        center.x /= neighborCount1;
+        center.y /= neighborCount1;
+        center.z /= neighborCount1;
 
-        newVelocity.x += (center.x - thisBoidPos.x) * rule1Scale;
-        newVelocity.y += (center.y - thisBoidPos.y) * rule1Scale;
-        newVelocity.z += (center.z - thisBoidPos.z) * rule1Scale;
+        v1.x = (center.x - thisBoidPos.x) * rule1Scale;
+        v1.y = (center.y - thisBoidPos.y) * rule1Scale;
+        v1.z = (center.z - thisBoidPos.z) * rule1Scale;
 
-        newVelocity.x += cohesion.x * rule3Scale;
-        newVelocity.y += cohesion.y * rule3Scale;
-        newVelocity.z += cohesion.z * rule3Scale;
+    }
+    if (neighborCount3 > 0) {
+        v3.x = cohesion.x * rule3Scale;
+        v3.y = cohesion.y * rule3Scale;
+        v3.z = cohesion.z * rule3Scale;
+        v3 /= neighborCount3;
+
     }
 
-    newVelocity.x += separate.x * rule2Scale;
-    newVelocity.y += separate.y * rule2Scale;
-    newVelocity.z += separate.z * rule2Scale;
+    v2.x = separate.x * rule2Scale;
+    v2.y = separate.y * rule2Scale;
+    v2.z = separate.z * rule2Scale;
 
-    return newVelocity;
+    return v1 + v2 + v3 + vel[iSelf];
 }
 
 /**
@@ -446,7 +454,9 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // - Access each boid in the cell and compute velocity change from
   //   the boids rules, if this boid is within the neighborhood distance.
   // - Clamp the speed change before putting the new speed in vel2
-    int neighborCount = 0;
+    int neighborCount1 = 0;
+    int neighborCount3 = 0;
+
     glm::vec3 center(0.0f, 0.0f, 0.0f);
     glm::vec3 separate(0.0f, 0.0f, 0.0f);
     glm::vec3 cohesion(0.0f, 0.0f, 0.0f);
@@ -475,7 +485,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
                     if (distance < rule1Distance) {
                         center += thatBoidPos;
-                        neighborCount++;
+                        neighborCount1++;
                     }
 
                     if (distance < rule2Distance) {
@@ -484,16 +494,20 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
                     if (distance < rule3Distance) {
                         cohesion += thatBoidVel;
+                        neighborCount3++;
                     }
                 }
 
             }
         }
     }
-    if (neighborCount > 0) {
-        center /= neighborCount;
+    if (neighborCount1 > 0) {
+        center /= neighborCount1;
         thisBoidNewVel += (center - thisBoidPos) * rule1Scale;
 
+    }
+
+    if (neighborCount3 > 0) {
         thisBoidNewVel += cohesion * rule3Scale;
     }
 
@@ -542,7 +556,9 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
   // - Access each boid in the cell and compute velocity change from
   //   the boids rules, if this boid is within the neighborhood distance.
   // - Clamp the speed change before putting the new speed in vel2
-    int neighborCount = 0;
+    int neighborCount1 = 0;
+    int neighborCount3 = 0;
+
     glm::vec3 center(0.0f, 0.0f, 0.0f);
     glm::vec3 separate(0.0f, 0.0f, 0.0f);
     glm::vec3 cohesion(0.0f, 0.0f, 0.0f);
@@ -570,7 +586,7 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 
                     if (distance < rule1Distance) {
                         center += thatBoidPos;
-                        neighborCount++;
+                        neighborCount1++;
                     }
 
                     if (distance < rule2Distance) {
@@ -579,16 +595,19 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
 
                     if (distance < rule3Distance) {
                         cohesion += thatBoidVel;
+                        neighborCount3++;
                     }
                 }
 
             }
         }
     }
-    if (neighborCount > 0) {
-        center /= neighborCount;
+    if (neighborCount1 > 0) {
+        center /= neighborCount1;
         thisBoidNewVel += (center - thisBoidPos) * rule1Scale;
+    }
 
+    if (neighborCount3 > 0) {
         thisBoidNewVel += cohesion * rule3Scale;
     }
 
