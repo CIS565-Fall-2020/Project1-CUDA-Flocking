@@ -7,7 +7,7 @@
 #include "kernel.h"
 #include "device_launch_parameters.h"
 
-
+#define HALF_GRID 0
 // LOOK-2.1 potentially useful for doing grid-based neighbor search
 #ifndef imax
 #define imax( a, b ) ( ((a) > (b)) ? (a) : (b) )
@@ -159,7 +159,11 @@ void Boids::initSimulation(int N) {
   checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
 
   // LOOK-2.1 computing grid params
-  gridCellWidth = std::max(std::max(rule1Distance, rule2Distance), rule3Distance); // * 2.0f
+  #if HALF_GRID
+  gridCellWidth = std::max(std::max(rule1Distance, rule2Distance), rule3Distance); 
+  #else
+  gridCellWidth = std::max(std::max(rule1Distance, rule2Distance), rule3Distance) * 2.0f;
+  #endif
   int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
   gridSideCount = 2 * halfSideCount;
 
@@ -397,16 +401,9 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     glm::vec3 *pos, glm::vec3 *vel1, glm::vec3 *vel2) {
     // TODO-2.1 - Update a boid's velocity using the uniform grid to reduce
     // the number of boids that need to be checked.
-    // - Identify the grid cell that this particle is in
-    // - Identify which cells may contain neighbors. This isn't always 8.
-    // - For each cell, read the start/end indices in the boid pointer array.
-    // - Access each boid in the cell and compute velocity change from
-    //   the boids rules, if this boid is within the neighborhood distance.
-    // - Clamp the speed change before putting the new speed in vel2
 
     int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (idx >= N ) { return; }
-    int gridIdx = pointToGridIdx(pos, &gridMin, inverseCellWidth, gridResolution, idx);
 
     glm::vec3 separate(0.0f, 0.0f, 0.0f);
     glm::vec3 cohesion(0.0f, 0.0f, 0.0f);
@@ -415,6 +412,20 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     int neighbor_count1 = 0;
     int neighbor_count3 = 0;
 
+    // - Identify the grid cell that this particle is in
+    glm::vec3 offset = boid_pos - gridMin;
+    int gridX = int(offset.x * inverseCellWidth);
+    int gridY = int(offset.y * inverseCellWidth);
+    int gridZ = int(offset.z * inverseCellWidth);
+    int gridIdx =  gridIndex3Dto1D(gridX, gridY, gridZ, gridResolution);
+
+    // - Identify which cells may contain neighbors. This isn't always 8.
+    // - For each cell, read the start/end indices in the boid pointer array.
+    // - Access each boid in the cell and compute velocity change from
+    //   the boids rules, if this boid is within the neighborhood distance.
+
+    #if HALF_GRID
+    //// 27 grid points
     for (int i = -1; i < 2; i++) {
         for (int j = -1; j < 2; j++) {
             for (int k = -1; k < 2; k++) {
@@ -430,7 +441,29 @@ __global__ void kernUpdateVelNeighborSearchScattered(
             }
         }
     }
+    #else
+    // 8 grid points
+    int altX = ((offset.x - (float(gridX) * cellWidth)) > (cellWidth / 2)) ? 1 : -1;
+    int altY = ((offset.y - (float(gridY) * cellWidth)) > (cellWidth / 2)) ? 1 : -1;
+    int altZ = ((offset.z - (float(gridZ) * cellWidth)) > (cellWidth / 2)) ? 1 : -1;
 
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            for (int k = 0; k < 2; k++) {
+                int gridNeighbor = gridIdx + (i*altX) + (j * altY * gridResolution) + (k * altZ * gridResolution * gridResolution);
+                if (gridNeighbor < 0 || gridNeighbor > gridCellCount) { continue; }
+                int gridStart = gridCellStartIndices[gridNeighbor];
+                if (gridStart == -1) { continue; }
+                int gridEnd = gridCellEndIndices[gridNeighbor];
+
+                for (int l = gridStart; l < gridEnd; l++) {
+                    updateParameters(vel1, pos, &separate, &cohesion, &center, &boid_pos, &neighbor_count1, &neighbor_count3, idx, particleArrayIndices[l]);
+                }
+            }
+        }
+    }
+    #endif
+    // - Clamp the speed change before putting the new speed in vel2
     updateVel(vel2, vel1, &separate, &cohesion, &center, &boid_pos, neighbor_count1, neighbor_count3, idx);
 }
 
