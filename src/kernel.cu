@@ -510,8 +510,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
                 if (start_index == -1) {
                     continue;
                 }
-                // sadly, can't find a way to use the ruleX helper functions I wrote before without copying over
-                // the data into another vector... might look into this later if I have time...
+
                 for (int i = start_index; i <= end_index; i++) {
                     int neighbor_boid_index = particleArrayIndices[i];
                     if (neighbor_boid_index != index) {
@@ -641,8 +640,6 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
                     continue;
                 }
 
-                // sadly, can't find a way to use the ruleX helper functions I wrote before without copying over
-                // the data into another vector or changing the inputs of the functions.. might look into this later if I have time...
                 for (int i = start_index; i <= end_index; i++) {
                     int neighbor_boid_index = i; // DIFFERENCE: We are refering to the pos,vel directly now after rearranging
                     if (neighbor_boid_index != index) {
@@ -782,7 +779,6 @@ void Boids::stepSimulationCoherentGrid(float dt) {
     // set up thrust stuff and sort
        dev_thrust_particleArrayIndices = thrust::device_pointer_cast<int>(dev_particleArrayIndices);
        dev_thrust_particleGridIndices = thrust::device_pointer_cast<int>(dev_particleGridIndices);
-
        thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects, dev_thrust_particleArrayIndices);
 
 
