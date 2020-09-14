@@ -7,7 +7,7 @@ Project 1 - Flocking**
 
 
 <p align="center">
-<image src="docs/capture.png" />
+<image src="docs/animation-capture.png" />
 <image src="docs/animation.gif" />
 </p>
 
