@@ -28,6 +28,4 @@ Comparison of 3 methods of step simulation, at most 27 neighbors (Naive Search, 
 
 * As the number of boids increase, the performance decreases as we could observe that the frame rates decrease. The reason for this is the arrays become longer and there is simply more calculation to do as there are more boids.
 * The coherent grid method showed greater performance as the boid count increases to a large number. At smaller number of boids, there is barely noticable increase in performance compared to the uniform grid. This is the outcome as I expected, because as the boid count increases, the cost to access boidIndices and then positions and velocity becomes more significant since they are performed in for every single neighbor search, whereas shuffling of the position and velocity arrays only need to happen once every step simulation
-
-For the coherent uniform grid: did you experience any performance improvements with the more coherent uniform grid? Was this the outcome you expected? Why or why not?
-Did changing cell width and checking 27 vs 8 neighboring cells affect performance? Why or why not? Be careful: it is insufficient (and possibly incorrect) to say that 27-cell is slower simply because there are more cells to check!
+* In 27 neighbor search, coherent still performs the best.
