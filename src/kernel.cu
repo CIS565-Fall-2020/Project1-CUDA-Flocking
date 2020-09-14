@@ -562,6 +562,31 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   // - Perform velocity updates using neighbor search
   // - Update positions
   // - Ping-pong buffers as needed
+  int N = numObjects;
+  dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
+  // int gridCellCount;
+  // int gridSideCount;
+  // float gridCellWidth;
+  // float gridInverseCellWidth;
+  // glm::vec3 gridMinimum;
+  kernComputeIndices<<<fullBlocksPerGrid, blockSize>>>(N, gridSideCount, gridMinimum, gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
+  checkCUDAErrorWithLine("kernComputeIndices failed!");
+  // Wrap device vectors in thrust iterators for use with thrust.
+  thrust::device_ptr<int> dev_thrust_keys(dev_particleGridIndices);
+  thrust::device_ptr<int> dev_thrust_values(dev_particleArrayIndices);
+  // thrust::sort_by_key
+  thrust::sort_by_key(dev_thrust_keys, dev_thrust_keys + N, dev_thrust_values);
+
+  kernIdentifyCellStartEnd<<<fullBlocksPerGrid, blockSize>>>(N, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
+
+  kernUpdateVelNeighborSearchScattered<<<fullBlocksPerGrid, blockSize>>>(N, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth, 
+    dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
+
+  kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(N, dt, dev_pos, dev_vel2);
+  checkCUDAErrorWithLine("kernUpdatePos failed!");
+
+  cudaMemcpy(dev_vel1, dev_vel2, N * sizeof(glm::vec3), cudaMemcpyDeviceToDevice);
+  checkCUDAErrorWithLine("memcpy back failed!");
 }
 
 void Boids::stepSimulationCoherentGrid(float dt) {
@@ -592,6 +617,7 @@ void Boids::endSimulation() {
   cudaFree(dev_particleGridIndices);
   cudaFree(dev_gridCellStartIndices);
   cudaFree(dev_gridCellEndIndices);
+  checkCUDAErrorWithLine("cudaFree failed!");
 }
 
 void Boids::unitTest() {
