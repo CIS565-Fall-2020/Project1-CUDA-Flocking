@@ -384,24 +384,16 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
   // Identify the start point of each cell in the gridIndices array.
   // This is basically a parallel unrolling of a loop that goes
   // "this index doesn't match the one before it, must be a new cell!"
-  int index = (blockIdx.x * blockDim.x) + threadIdx.x; // grid index
+  int index = (blockIdx.x * blockDim.x) + threadIdx.x;  // boid index
   if (index >= N) {
     return;
   }
-  
-  for (int i = 0; i < N; i++) {
-    int curGridIndex = particleGridIndices[i];
-    if (curGridIndex == index) {
-      // Find start
-      if (i == 0 || particleGridIndices[i - 1] != particleGridIndices[i]) {
-        gridCellStartIndices[index] = i;
-      }
-      // Find end
-      if (i == N - 1 || particleGridIndices[i + 1] != particleGridIndices[i]) {
-        gridCellEndIndices[index] = i;
-        break;
-      }
-    }
+  int gridIndex = particleGridIndices[index];
+  if (index == 0 || gridIndex != particleGridIndices[index - 1]) {
+    gridCellStartIndices[gridIndex] = index;
+  }
+  else if (index == N - 1 || gridIndex != particleGridIndices[index + 1]) {
+    gridCellEndIndices[gridIndex] = index;
   }
 }
 
@@ -433,9 +425,9 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // the range relative to the current boid cell that neighbors might be in
   int3 minCell = make_int3(0, 0, 0);
   int3 maxCell = make_int3(0, 0, 0);
-  if (boidGridCellFloor.x > 0 && glm::fract(boidGridCell.x) < 0.5f) minCell.x = -1;
-  if (boidGridCellFloor.y > 0 && glm::fract(boidGridCell.y) < 0.5f) minCell.y = -1;
-  if (boidGridCellFloor.z > 0 && glm::fract(boidGridCell.z) < 0.5f) minCell.z = -1;
+  if (boidGridCellFloor.x > 0 && glm::fract(boidGridCell.x) <= 0.5f) minCell.x = -1;
+  if (boidGridCellFloor.y > 0 && glm::fract(boidGridCell.y) <= 0.5f) minCell.y = -1;
+  if (boidGridCellFloor.z > 0 && glm::fract(boidGridCell.z) <= 0.5f) minCell.z = -1;
   if (boidGridCellFloor.x < gridResolution - 1 && glm::fract(boidGridCell.x) > 0.5f) maxCell.x = 1;
   if (boidGridCellFloor.y < gridResolution - 1 && glm::fract(boidGridCell.y) > 0.5f) maxCell.y = 1;
   if (boidGridCellFloor.z < gridResolution - 1 && glm::fract(boidGridCell.z) > 0.5f) maxCell.z = 1;
@@ -541,9 +533,9 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
   // the range relative to the current boid cell that neighbors might be in
   int3 minCell = make_int3(0, 0, 0);
   int3 maxCell = make_int3(0, 0, 0);
-  if (boidGridCellFloor.x > 0 && glm::fract(boidGridCell.x) < 0.5f) minCell.x = -1;
-  if (boidGridCellFloor.y > 0 && glm::fract(boidGridCell.y) < 0.5f) minCell.y = -1;
-  if (boidGridCellFloor.z > 0 && glm::fract(boidGridCell.z) < 0.5f) minCell.z = -1;
+  if (boidGridCellFloor.x > 0 && glm::fract(boidGridCell.x) <= 0.5f) minCell.x = -1;
+  if (boidGridCellFloor.y > 0 && glm::fract(boidGridCell.y) <= 0.5f) minCell.y = -1;
+  if (boidGridCellFloor.z > 0 && glm::fract(boidGridCell.z) <= 0.5f) minCell.z = -1;
   if (boidGridCellFloor.x < gridResolution - 1 && glm::fract(boidGridCell.x) > 0.5f) maxCell.x = 1;
   if (boidGridCellFloor.y < gridResolution - 1 && glm::fract(boidGridCell.y) > 0.5f) maxCell.y = 1;
   if (boidGridCellFloor.z < gridResolution - 1 && glm::fract(boidGridCell.z) > 0.5f) maxCell.z = 1;
@@ -646,7 +638,7 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   dev_thrust_particleArrayIndices = thrust::device_ptr<int>(dev_particleArrayIndices);
   thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects, dev_thrust_particleArrayIndices);
   
-  kernIdentifyCellStartEnd << <cellFullBlocksPerGrid, blockSize >> > (gridCellCount, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
+  kernIdentifyCellStartEnd << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
   kernUpdateVelNeighborSearchScattered << <objectFullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
     dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
   kernUpdatePos << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos, dev_vel2);
@@ -683,13 +675,15 @@ void Boids::stepSimulationCoherentGrid(float dt) {
   dev_thrust_particleArrayIndices = thrust::device_ptr<int>(dev_particleArrayIndices);
   thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects, dev_thrust_particleArrayIndices);
 
-  kernIdentifyCellStartEnd << <cellFullBlocksPerGrid, blockSize >> > (gridCellCount, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
+  kernIdentifyCellStartEnd << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
   kernRearrangeParticleData << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dev_pos, dev_pos2, dev_vel1, dev_vel2, dev_particleArrayIndices);
   kernUpdateVelNeighborSearchCoherent << <objectFullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
     dev_gridCellStartIndices, dev_gridCellEndIndices, dev_pos2, dev_vel2, dev_vel1);
-  kernUpdatePos << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos, dev_vel1);
+  kernUpdatePos << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos2, dev_vel1);
 
+  glm::vec3* temp = dev_pos;
   dev_pos = dev_pos2;
+  dev_pos2 = temp;
 }
 
 void Boids::endSimulation() {
