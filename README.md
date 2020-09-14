@@ -44,7 +44,8 @@ There are also three different type of update modes, each using a different meth
 
 ### Analysis Questions
 
-**For each implementation, how does changing the number of boids affect performance? Why do you think this is? **
+
+**For each implementation, how does changing the number of boids affect performance? Why do you think this is?**
 
 For all implementations, increasing the number of boids decreases the performance (See Graph 1 Above) because there are more neighboring boids you would have to consider. However, when the number of boids is relatively low (<10,000), increasing the number of boids do not increase the performance of uniform or coherent grid methods as drastically. This is probably because the number of boids is low enough where its number does not have nearly as much of an impact on the performance as the amount of time it takes to set up the data structures. Thus, we do not see huge performance differences for lower numbers because similar datastructures need to be set up for both grid methods, which take a good amount of time.
 
@@ -57,7 +58,7 @@ For all implementations, increasing the number of block count will increase the 
 
 The coherent uniform grid did result in performance improvements from the scattered uniform grid. This was expected because the reduction of the indirection step caused there to be less data on the cache. However, I didn't expect the performance increase to be so significant and noticeable! 
 
-**Did changing cell width and checking 27 vs 8 neighboring cells affect performance? Why or why not? Be careful: it is insufficient (and possibly incorrect) to say that 27-cell is slower simply because there are more cells to check! **
+**Did changing cell width and checking 27 vs 8 neighboring cells affect performance? Why or why not? Be careful: it is insufficient (and possibly incorrect) to say that 27-cell is slower simply because there are more cells to check!**
 
 If you decrease cell width, the performance decreases because you have to create larger buffers to accomodate the larger grid resolution. Since we have to have an index for every cell to keep track of a possible start or end index and every index needs to be set to a value during each update, this will cause the performance to decrease. However, if you increase cell width too much, you will have to search more boids, which will also decrease the performance (imagine if we have one cell the size of the scene scale. This would mean we are just doing the naive searching method!). Thus, scaling the cell width depending on the rule distances is optimal. 
 
