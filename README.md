@@ -3,7 +3,8 @@ Project 1 - Flocking**
 
 Simulation of 1 Million Boids Flocking Running at 60 FPS on Nvidia GTX 970m
 
-![simulation gif](https://media.giphy.com/media/VIFKrC0ANP3oVomEAO/giphy.gif)
+![simulation gif](images/cuda_flocking.gif)
+
 NAME: CHETAN PARTIBAN 
 
 GPU: GTX 970m (Compute Capability 5.2) 
