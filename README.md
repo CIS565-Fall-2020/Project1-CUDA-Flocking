@@ -16,6 +16,8 @@ The Uniform Grid and Coherent Grid searches through the cells within its search 
 but Coherent Grid has a modification in the method of accessing elements.
 
 The method used to compare performance was by frame rate under different boid counts.
+I took the lowest and highest frame rate that appeared at least twice within the first minute, 
+and took the average of that as the performance result.
 
 Comparison of 3 methods of step simulation (Naive Search, Uniform Grid, Coherent Grid):
 ![chart1](images/fpsGraph8.PNG)
