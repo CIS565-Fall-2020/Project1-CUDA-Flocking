@@ -9,7 +9,7 @@
 * <img src= "images/Logos/mail.png" alt = "Mail" height = "30" width = "30">  sireesha@seas.upenn.edu
 
 
-Tested on personal computer - Microsoft Windows 10 Pro, 
+* Tested on personal computer - Microsoft Windows 10 Pro, 
 Processor : Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz, 2601 Mhz, 6 Core(s), 12 Logical Processor(s) 
 GPU : NVIDIA GeForce RTX 2060
 
