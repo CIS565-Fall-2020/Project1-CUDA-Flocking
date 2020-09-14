@@ -37,7 +37,7 @@ void checkCUDAError(const char *msg, int line = -1) {
 *****************/
 
 /*! Block size used for CUDA kernel launch. */
-#define blockSize 1024
+#define blockSize 128
 
 // LOOK-1.2 Parameters for the boids algorithm.
 // These worked well in our reference implementation.
@@ -447,7 +447,27 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     }
     glm::vec3 thisBoidPos = pos[index];
     glm::vec3 gridPos = glm::floor((thisBoidPos - gridMin) * inverseCellWidth);
-    int gridIndex = gridIndex3Dto1D((int)gridPos.x, (int)gridPos.y, (int)gridPos.z, gridResolution);
+    glm::vec3 gridPosCoord = gridPos * cellWidth + gridMin;
+    glm::vec3 start(0.0f, 0.0f, 0.0f);
+    glm::vec3 end(0.0f, 0.0f, 0.0f);
+    if (thisBoidPos.x - gridPosCoord.x <= cellWidth / 2) {
+        start.x = -1;
+    }
+    else {
+        end.x = 1;
+    }
+    if (thisBoidPos.y - gridPosCoord.y <= cellWidth / 2) {
+        start.y = -1;
+    }
+    else {
+        end.y = 1;
+    }
+    if (thisBoidPos.z - gridPosCoord.z <= cellWidth / 2) {
+        start.z = 1;
+    }
+    else {
+        end.z = 1;
+    }
 
   // - Identify which cells may contain neighbors. This isn't always 8.
   // - For each cell, read the start/end indices in the boid pointer array.
@@ -456,20 +476,23 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // - Clamp the speed change before putting the new speed in vel2
     int neighborCount1 = 0;
     int neighborCount3 = 0;
+    int gridCount = sizeof(gridCellEndIndices) / sizeof(int);
 
     glm::vec3 center(0.0f, 0.0f, 0.0f);
     glm::vec3 separate(0.0f, 0.0f, 0.0f);
     glm::vec3 cohesion(0.0f, 0.0f, 0.0f);
     glm::vec3 thisBoidNewVel = vel1[index];
 
-    for (int k = -1; k <= 1; k++) {
-        for (int j = -1; j <= 1; j++) {
-            for (int i = -1; i <= 1; i++) { 
+    for (int k = start.z; k <= end.z; k++) {
+        for (int j = start.y; j <= end.y; j++) {
+            for (int i = start.x; i <= end.x; i++) { 
                 int neighGridX = (int) gridPos.x + i;
                 int neighGridY = (int) gridPos.y + j;
                 int neighGridZ = (int)gridPos.z + k;
 
                 int neighGridIndex = gridIndex3Dto1D(neighGridX, neighGridY, neighGridZ, gridResolution);
+                if (neighGridIndex >= gridCount) continue;
+
                 int startIndex = gridCellStartIndices[neighGridIndex];
                 int endIndex = gridCellEndIndices[neighGridIndex];
 
