@@ -44,3 +44,6 @@ This process is data parallel and can be naively parallelized.
 ![buffers for generating a uniform grid using index sort, then making the boid data coherent](images/Boids%20Ugrids%20buffers%20data%20coherent.png)
 
 ## Performace Analysis
+![](images/FPSvsBlockSize_Vis.PNG)
+![](images/FPSvsBoids_NoVis.PNG)
+![](images/FPSvsBoids_Vis.PNG)
