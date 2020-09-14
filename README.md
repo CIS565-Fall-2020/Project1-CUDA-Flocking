@@ -14,7 +14,13 @@ Processor : Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz, 2601 Mhz, 6 Core(s), 12 Lo
 GPU : NVIDIA GeForce RTX 2060
 
 ## OUTPUT 
+* 500,000 Boids using Coherent Grid 
+
 ![500 K Boids using Coherent grid](images/boids500k_final.gif)
+
+*100,000 Boids using Coherent Grid 
+
+![100 K Boids using Coherent grid](images/boids100k_final.gif)
 
 ## CUDA FLOCKING 
 
