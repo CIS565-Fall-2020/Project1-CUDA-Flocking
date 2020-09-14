@@ -145,17 +145,18 @@ contiguous in memory, so this data can be accessed directly using
 ![buffers for generating a uniform grid using index sort, then making the boid data coherent](images/Boids%20Ugrids%20buffers%20data%20coherent.png)
 
 ## PERFORMANCE ANALYSIS 
+Below are the graphs that depict how the number of boids in simulation affect the frame rate. The first Graph shows the relationship when Visualization is turned on and the second one when turned off. The Third graph shows how the blocksize corresponds to changes in FPS. I have used 100,000 boids for this simulation and the block sizes vary from 128 to 1024. The last graph depicts the changes in GridCell width used for different no. of boids in simulation using a coherent grid. 
 
-### 1)
+* 1) FPS Per Number of Boids 
 ![FPS per no. of Boids With Visualization](images/fps_per_numboids.png)
 
-### 2)
-![FPS per no. of Boids Without Visualization](images/fps_per_numboids _without_vis.png)
+* 2) FPS Per Number of Boids without Visualization 
+![FPS per no. of Boids Without Visualization](images/fps_per_numboids_without_vis.png)
 
-### 3)
+* 3) FPS per BlockSize 
 ![FPS per BlockSize](images/fps_per_blocksize.png)
 
-### 4)
+* 4) FPS per GridCellWidth
 ![FPS per GridCellWidth](images/fps_per_gridcellwidth.png)
 
 **Answer these:**
