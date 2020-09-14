@@ -154,27 +154,27 @@ contiguous in memory, so this data can be accessed directly using
 ## PERFORMANCE ANALYSIS 
 Below are the graphs that depict how the number of boids in simulation affect the frame rate. The first Graph shows the relationship when Visualization is turned on and the second one when turned off. The Third graph shows how the blocksize corresponds to changes in FPS. I have used 100,000 boids for this simulation and the block sizes vary from 128 to 1024. The last graph depicts the changes in GridCell width used for different no. of boids in simulation using a coherent grid. 
 
-* 1) FPS Per Number of Boids 
+* FPS Per Number of Boids 
 ![FPS per no. of Boids With Visualization](images/fps_per_numboids.png)
 
 We clearly see the difference when using a coherent grid vs. using brute force approach. Even with 500,000 boids when using a coherent grid, we could achieve close to 100fps. 
 
-* 2) FPS Per Number of Boids without Visualization 
+* FPS Per Number of Boids without Visualization 
 ![FPS per no. of Boids Without Visualization](images/fps_per_numboids_without_vis.png)
 
 FPS is significantly higher when visualization is turned off reaching a high of almost 1900 fps for 100 boids using a coherent grid. 
 
-* 3) FPS per BlockSize 
+* FPS per BlockSize 
 ![FPS per BlockSize](images/fps_per_blocksize.png)
 
 Performance of each individual method is almost same when using different block sizes. The combination that works best for me is block size 256 using coherent grid.  
 
-* 4) FPS per GridCellWidth
+* FPS per GridCellWidth
 ![FPS per GridCellWidth](images/fps_per_gridcellwidth.png)
 
 We can see that using the cell size : 2 * neighboring dist works well with the size 50,000 boids but the performance drops when using 100,000 boids. A cell size : neighboring dist is more consistent with increasing no. of boids. 
 
-**Answer these:**
+**Answers:**
 
 * For each implementation, how does changing the number of boids affect
 performance? Why do you think this is?
