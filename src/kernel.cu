@@ -458,7 +458,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
         int boidBCellIndex = gridIndex3Dto1D(i, j, k, gridResolution);
         if (gridCellStartIndices[boidBCellIndex] > -1) {
           for (int b = gridCellStartIndices[boidBCellIndex]; b <= gridCellEndIndices[boidBCellIndex]; b++) {
-            int boidBIndex = particleArrayIndices[b]; // index of pos, vel1 or vel2 of a neighbor boid
+            int boidBIndex = particleArrayIndices[b];
             glm::vec3 boidBPos = pos[boidBIndex];
             glm::vec3 boidBVel = vel1[boidBIndex];
             if (boidBIndex != boidIndex) {
@@ -499,7 +499,8 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   }
 }
 
-__global__ void kernRearrangeParticleData (
+
+__global__ void kernRearrangeParticleData(
   int N, glm::vec3* pos1, glm::vec3* pos2, glm::vec3* vel1, glm::vec3* vel2,
   int* particleArrayIndices) {
   int boidIndex = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -637,18 +638,18 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   dim3 objectFullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
   dim3 cellFullBlocksPerGrid((gridCellCount + blockSize - 1) / blockSize);
 
-  kernResetIntBuffer<<<objectFullBlocksPerGrid, blockSize>>> (gridCellCount, dev_gridCellStartIndices, -1);
-  kernComputeIndices<<<objectFullBlocksPerGrid, blockSize>>>(numObjects, gridSideCount, gridMinimum,
+  kernResetIntBuffer << <cellFullBlocksPerGrid, blockSize >> > (gridCellCount, dev_gridCellStartIndices, -1);
+  kernComputeIndices << <objectFullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum,
     gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
 
   dev_thrust_particleGridIndices = thrust::device_ptr<int>(dev_particleGridIndices);
   dev_thrust_particleArrayIndices = thrust::device_ptr<int>(dev_particleArrayIndices);
   thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects, dev_thrust_particleArrayIndices);
-
-  kernIdentifyCellStartEnd<<<cellFullBlocksPerGrid, blockSize>>>(gridCellCount, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
-  kernUpdateVelNeighborSearchScattered<<<objectFullBlocksPerGrid, blockSize>>>(numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
+  
+  kernIdentifyCellStartEnd << <cellFullBlocksPerGrid, blockSize >> > (gridCellCount, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
+  kernUpdateVelNeighborSearchScattered << <objectFullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
     dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
-  kernUpdatePos<<<objectFullBlocksPerGrid, blockSize>>>(numObjects, dt, dev_pos, dev_vel2);
+  kernUpdatePos << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos, dev_vel2);
 
   glm::vec3* temp = dev_vel1;
   dev_vel1 = dev_vel2;
@@ -674,17 +675,19 @@ void Boids::stepSimulationCoherentGrid(float dt) {
   dim3 objectFullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
   dim3 cellFullBlocksPerGrid((gridCellCount + blockSize - 1) / blockSize);
 
-  kernResetIntBuffer << <objectFullBlocksPerGrid, blockSize >> > (gridCellCount, dev_gridCellStartIndices, -1);
+  kernResetIntBuffer << <cellFullBlocksPerGrid, blockSize >> > (gridCellCount, dev_gridCellStartIndices, -1);
   kernComputeIndices << <objectFullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum,
     gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
 
   dev_thrust_particleGridIndices = thrust::device_ptr<int>(dev_particleGridIndices);
   dev_thrust_particleArrayIndices = thrust::device_ptr<int>(dev_particleArrayIndices);
   thrust::sort_by_key(dev_thrust_particleGridIndices, dev_thrust_particleGridIndices + numObjects, dev_thrust_particleArrayIndices);
+
   kernIdentifyCellStartEnd << <cellFullBlocksPerGrid, blockSize >> > (gridCellCount, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
   kernRearrangeParticleData << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dev_pos, dev_pos2, dev_vel1, dev_vel2, dev_particleArrayIndices);
   kernUpdateVelNeighborSearchCoherent << <objectFullBlocksPerGrid, blockSize >> > (numObjects, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth,
     dev_gridCellStartIndices, dev_gridCellEndIndices, dev_pos2, dev_vel2, dev_vel1);
+  kernUpdatePos << <objectFullBlocksPerGrid, blockSize >> > (numObjects, dt, dev_pos, dev_vel1);
 
   dev_pos = dev_pos2;
 }
