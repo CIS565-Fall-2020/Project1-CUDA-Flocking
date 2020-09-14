@@ -446,28 +446,14 @@ __global__ void kernUpdateVelNeighborSearchScattered(
         return;
     }
     glm::vec3 thisBoidPos = pos[index];
+    float maxDistance = glm::max(glm::max(rule1Distance, rule2Distance), rule3Distance);
+    glm::vec3 maxGridPos = thisBoidPos + maxDistance;
+    glm::vec3 minGridPos = thisBoidPos - maxDistance;
+    glm::vec3 maxGrid = glm::ceil((maxGridPos - gridMin) * inverseCellWidth);
+    glm::vec3 minGrid = glm::ceil((minGridPos - gridMin) * inverseCellWidth);
     glm::vec3 gridPos = glm::floor((thisBoidPos - gridMin) * inverseCellWidth);
     glm::vec3 gridPosCoord = gridPos * cellWidth + gridMin;
-    glm::vec3 start(0.0f, 0.0f, 0.0f);
-    glm::vec3 end(0.0f, 0.0f, 0.0f);
-    if (thisBoidPos.x - gridPosCoord.x <= cellWidth / 2) {
-        start.x = -1;
-    }
-    else {
-        end.x = 1;
-    }
-    if (thisBoidPos.y - gridPosCoord.y <= cellWidth / 2) {
-        start.y = -1;
-    }
-    else {
-        end.y = 1;
-    }
-    if (thisBoidPos.z - gridPosCoord.z <= cellWidth / 2) {
-        start.z = 1;
-    }
-    else {
-        end.z = 1;
-    }
+
 
   // - Identify which cells may contain neighbors. This isn't always 8.
   // - For each cell, read the start/end indices in the boid pointer array.
@@ -483,12 +469,12 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     glm::vec3 cohesion(0.0f, 0.0f, 0.0f);
     glm::vec3 thisBoidNewVel = vel1[index];
 
-    for (int k = start.z; k <= end.z; k++) {
-        for (int j = start.y; j <= end.y; j++) {
-            for (int i = start.x; i <= end.x; i++) { 
-                int neighGridX = (int) gridPos.x + i;
-                int neighGridY = (int) gridPos.y + j;
-                int neighGridZ = (int)gridPos.z + k;
+    for (int k = minGrid.z; k <= maxGrid.z; k++) {
+        for (int j = minGrid.y; j <= maxGrid.y; j++) {
+            for (int i = minGrid.x; i <= maxGrid.x; i++) { 
+                int neighGridX = i;
+                int neighGridY = j;
+                int neighGridZ = k;
 
                 int neighGridIndex = gridIndex3Dto1D(neighGridX, neighGridY, neighGridZ, gridResolution);
                 if (neighGridIndex >= gridCount) continue;
