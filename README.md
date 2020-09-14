@@ -12,7 +12,10 @@ Project 1 - Flocking**
 
 This is a CUDA based simulation of the Reynold Boids Algorithm. Three approaches were taken to perform neighbor search.
 The Naive approach does a brute force search through every other boid to update one boid.
-The Uniform Grid and Coherent Grid searches through the cells within its search radius, but Coherent Grid has a modification in the method of accessing elements.
+The Uniform Grid and Coherent Grid searches through the cells within its search radius, 
+but Coherent Grid has a modification in the method of accessing elements.
+
+The method used to compare performance was by frame rate under different boid counts.
 
 Comparison of 3 methods of step simulation (Naive Search, Uniform Grid, Coherent Grid):
 ![chart1](images/fpsGraph8.PNG)
