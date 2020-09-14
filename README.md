@@ -13,7 +13,9 @@ Tested on personal computer - Microsoft Windows 10 Pro,
 Processor : Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz, 2601 Mhz, 6 Core(s), 12 Logical Processor(s) 
 GPU : NVIDIA GeForce RTX 2060
 
-### Boids with Naive Neighbor Search
+## CUDA FLOCKING 
+
+### Boids with Naive Neighbor Search - BruteForce Method 
 
 In the Boids flocking simulation, particles representing birds or fish
 (boids) move around the simulation space according to three rules:
@@ -86,11 +88,7 @@ function rule3(Boid boid)
 end
 ```
 
-
-
-## FLOCKING 
-
-* UNIFORM GRID 
+### Uniform Grid 
 
 Any two boids can only influence each other if they are
 within some *neighborhood distance* of each other.
@@ -133,7 +131,7 @@ grid. This "table" can just be an array with as much space as there are cells.
 This process is data parallel and can be naively parallelized.
 ![buffers for generating a uniform grid using index sort](images/Boids%20Ugrids%20buffers%20naive.png)
 
-* COHERENT GRID 
+### Coherent Grid  
 The uniform grid neighbor search outlined in 2.1: pointers to boids in
 a single cell are contiguous in memory, but the boid data itself (velocities and
 positions) is scattered all over the place. We can rearrange the boid data
@@ -150,27 +148,40 @@ Below are the graphs that depict how the number of boids in simulation affect th
 * 1) FPS Per Number of Boids 
 ![FPS per no. of Boids With Visualization](images/fps_per_numboids.png)
 
+We clearly see the difference when using a coherent grid vs. using brute force approach. Even with 500,000 boids when using a coherent grid, we could achieve close to 100fps. 
+
 * 2) FPS Per Number of Boids without Visualization 
 ![FPS per no. of Boids Without Visualization](images/fps_per_numboids_without_vis.png)
+
+FPS is significantly higher when visualization is turned off reaching a high of almost 1900 fps for 100 boids using a coherent grid. 
 
 * 3) FPS per BlockSize 
 ![FPS per BlockSize](images/fps_per_blocksize.png)
 
+Performance of each individual method is almost same when using different block sizes. The combination that works best for me is block size 256 using coherent grid.  
+
 * 4) FPS per GridCellWidth
 ![FPS per GridCellWidth](images/fps_per_gridcellwidth.png)
+
+We can see that using the cell size : 2 * neighboring dist works well with the size 50,000 boids but the performance drops when using 100,000 boids. A cell size : neighboring dist is more consistent with increasing no. of boids. 
 
 **Answer these:**
 
 * For each implementation, how does changing the number of boids affect
 performance? Why do you think this is?
 
+The performance decreases as we increase the no. of boids. As the count increases, the system has to perform more and more checks and hence we see a drop in fps consistently. We can improve the performance by using spatial data structures like uniform grid and coherent grid. Also, using a very low count of boids is also not ideal since the overhead of setting up the gpu pipeline and running the process in parallel overweighs the increase in efficiency. According to me, goid count of 5K to 50K works best for this algorithm. However, higher the no. of boids, lower the performance. 
+
 * For each implementation, how does changing the block count and block size
 affect performance? Why do you think this is?
+Changing the block size and count doesn't alter the performance too much. The fps for all 3 methods is almost consistent when using block sizes 128, 256, 512 and 1024. This is because the no. of threads running are the same (32 since it is the warp size) for each of these block sizes. 
 
 * For the coherent uniform grid: did you experience any performance improvements
 with the more coherent uniform grid? Was this the outcome you expected?
 Why or why not?
+Yes, the coherent grid improves the performance compared to the original uniform grid. This is an expected outcome since we remove the extra step of looking for the position and velocity using particleArrayIndices for all the boids in neighboring gridcells which fall under the search radius. Instead, we arrange the position and velocities by grouping them based on the gridcell the boid is in so they are in a continuous array. 
 
 * Did changing cell width and checking 27 vs 8 neighboring cells affect performance?
 Why or why not? Be careful: it is insufficient (and possibly incorrect) to say
 that 27-cell is slower simply because there are more cells to check!
+Both using 27 and 8 neighboring cells gives an almost similar result for smaller counts of boids. As we get to higher counts, say 100,000 as shown in the graph, performance is higher when checking 27 cells. A the cell size for the 8 cells is higher, it takes longer to determine the neighboring cells compared to looping over smaller sized 27 cells. 
