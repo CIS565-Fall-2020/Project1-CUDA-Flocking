@@ -26,9 +26,7 @@ Project 1 - Flocking**
 
 * Did changing cell width and checking 27 vs 8 neighboring cells affect performance? Why or why not? Be careful: it is insufficient (and possibly incorrect) to say that 27-cell is slower simply because there are more cells to check!
 
-*Answer:* Besides having to check more cells, we also have to check for more neighbor boids when we decrease our cellWidth. Decreasing the cell width while keeping the search radius constant results in having to account for more neighboring cells, thus we increase the possible number of boids that are within our search radius. If we also increase the number of boids (but keep the scene_scale the same), every cell has a higher chance of enclosing more boids compared to before. All of these conditions can impact the performance when we check 27 vs 8 neighboring cells.
-
-I'm still trying to figure out what is the best way to add graphs to GitHub README files, so for this assignment I will be using tables instead to represent the analysis.
+*Answer:* Decreasing the cell width (thus checking for more than 8 neighboring cells) slows down the performance. Besides having to check more cells, we also have to check for more neighbor boids when we decrease our cellWidth. Decreasing the cell width while keeping the search radius constant results in having to account for more neighboring cells, thus we increase the possible number of boids that are within our search radius. If we also increase the number of boids (but keep the scene_scale the same), every cell has a higher chance of enclosing more boids compared to before. All of these conditions can impact the performance when we check 27 vs 8 neighboring cells.
 
 **Timing the kernels**
 
@@ -65,6 +63,8 @@ Fps | 2.3 | 28.6 | 29.9
 Mode | Naive | Naive Uniform | Semi-Coherent Uniform
 :---: | :---: | :---: | :---:
 Fps | 2.3 | 29.6 | 30.9
+
+![Fps graph](images/graph.png)
 
 **Impact of blockSize on performance**
 
