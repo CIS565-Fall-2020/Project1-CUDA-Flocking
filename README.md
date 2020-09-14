@@ -1,11 +1,11 @@
-**University of Pennsylvania, CIS 565: GPU Programming and Architecture,
-Project 1 - Flocking**
+# Project 1 - Flocking
+**University of Pennsylvania, CIS 565: GPU Programming and Architecture, Project 1 - Flocking**
 
-* (TODO) YOUR NAME HERE
-  * (TODO) [LinkedIn](), [personal website](), [twitter](), etc.
-* Tested on: (TODO) Windows 22, i7-2222 @ 2.22GHz 22GB, GTX 222 222MB (Moore 2222 Lab)
+* Dayu Li  
+*[LinkedIn](https://www.linkedin.com/in/dayu95/)
+* Tested on: Windows 10, i7-10700K @ 3.80GHz 16GB, GTX 2070 8150MB (Personal laptop)
 
-### (TODO: Your README)
-
-Include screenshots, analysis, etc. (Remember, this is public, so don't put
-anything here that you don't want to share with the world.)
+## Screenshots
+| 5,000 Boids | 100,000 Boids |
+|--|--|
+|![Number of boids: 5k](images/Show1.gif) | ![Number of boids: 100k](images/Show2.gif) |
