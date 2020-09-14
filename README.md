@@ -3,7 +3,6 @@ Project 1 - Flocking**
 
 * Jacky Lu
   * [LinkedIn](https://www.linkedin.com/in/jacky-lu-506968129/)
-* Tested on: Windows 10 Education, i9-9900k @ 3.60GHz 64GB, NVIDIA GeForce RTX 2080 8192MB (Personal)
 
 # README
 
@@ -18,8 +17,7 @@ Project 1 - Flocking**
 ![](images/coherent_27_5000_boids_10648_cells.gif)
 * ### Uniform Grid Implementation With Coherent Data [8 Neighboring Cells Search] (5,000 Boids & 10,648 Cells)
 ![](images/coherent_8_5000_boids_10648_cells.gif)
-* ### Uniform Grid Implementation With Coherent Data [8 Neighboring Cells Search] (20,000,000 Boids & 64,964,808 Cells)
-![](images/coherent_8_20000000_boids_64964808_cells.gif)
+* ### [Uniform Grid Implementation With Coherent Data [8 Neighboring Cells Search] (20,000,000 Boids & 64,964,808 Cells)](https://drive.google.com/file/d/100R0v3XGLHOtpD7fnWTzJrbg_4Zd0yig/view?usp=sharing)
 
 * #### P.S. I wasn't able to perform much performance analysis due to the lack of time because I have been 
 trying to find the bug that crashes my program for the entire weekend. However, as a result of the lengthy debugging 
