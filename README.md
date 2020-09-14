@@ -1,13 +1,16 @@
 **University of Pennsylvania, CIS 565: GPU Programming and Architecture,
 Project 1 - Flocking**
 
+Simulation of 1 Million Boids Flocking Running at 60 FPS on Nvidia GTX 970m
+
+![simulation gif](https://media.giphy.com/media/VIFKrC0ANP3oVomEAO/giphy.gif)
 NAME: CHETAN PARTIBAN 
 
 GPU: GTX 970m (Compute Capability 5.2) 
 
 Tested on Windows 10, i7-6700HQ @ 2.60 GHz 16Gb, GTX 970m 6Gb (Personal Laptop) 
 
-### (TODO: Your README)
+### Performance Analysis
 
 For this project, I just used FPS as a measurement of relative performance. Although it is indeed quite a crude measurement method, because the difference across methods is quite large, the differences still present themselves even with this performance measure. For all the tests, I turned off visualizations to prevent the framerate from being capped at 60hz. I performed three different performance tests to understand the performance of the different methods more thoroughly.
 
