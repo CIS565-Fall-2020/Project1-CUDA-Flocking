@@ -19,10 +19,10 @@ The method used to compare performance was by frame rate under different boid co
 I took the lowest and highest frame rate that appeared at least twice within the first minute, 
 and took the average of that as the performance result.
 
-Comparison of 3 methods of step simulation, searching at most 8 neighbors (Naive Search, Uniform Grid, Coherent Grid):
+Comparison of 3 methods of step simulation, at most 8 neighbors (Naive Search, Uniform Grid, Coherent Grid):
 ![chart1](images/fpsGraph8.PNG)
 
-Comparison of 3 methods of step simulation , searching at most 27 neighbors(Naive Search, Uniform Grid, Coherent Grid):
+Comparison of 3 methods of step simulation, at most 27 neighbors (Naive Search, Uniform Grid, Coherent Grid):
 ![chart1](images/fpsGraph27.PNG)
 
 
