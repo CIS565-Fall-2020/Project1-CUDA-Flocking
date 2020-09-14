@@ -1,0 +1,2 @@
+[WarpWatch]
+Expressions=index, cellIndex, gridIndices[0], indices[0], ((__local__ float*)&pos[index])[0], rule1Count, rule3Count, xTest, yTest, zTest, startIndex, endIndex

@@ -13,13 +13,17 @@
 // ================
 
 // LOOK-2.1 LOOK-2.3 - toggles for UNIFORM_GRID and COHERENT_GRID
-#define VISUALIZE 1
-#define UNIFORM_GRID 0
-#define COHERENT_GRID 0
+#define VISUALIZE 0
+#define UNIFORM_GRID 1
+#define COHERENT_GRID 1
 
 // LOOK-1.2 - change this to adjust particle count in the simulation
-const int N_FOR_VIS = 5000;
+const int N_FOR_VIS = 50000;
 const float DT = 0.2f;
+
+float totalFps = 0.0f;
+int totalTime = 0;
+int offset = 10;
 
 /**
 * C main function.
@@ -227,10 +231,17 @@ void initShaders(GLuint * program) {
       double time = glfwGetTime();
 
       if (time - timebase > 1.0) {
+          totalTime++;
         fps = frame / (time - timebase);
+        if (totalTime >= offset) 
+        {
+            totalFps += fps;
+        }
         timebase = time;
         frame = 0;
       }
+
+      
 
       runCUDA();
 
@@ -256,6 +267,9 @@ void initShaders(GLuint * program) {
       glfwSwapBuffers(window);
       #endif
     }
+
+    float averageFPS = totalFps / (totalTime - offset);
+    std::cout << "AverageFps: " << averageFPS;
     glfwDestroyWindow(window);
     glfwTerminate();
   }
