@@ -1,7 +1,7 @@
 CUDA Introduction - Flocking
 ============================
 
-This is due Sunday, September 13.
+This is due Sunday, September 8.
 
 **Summary:** In this project, you will get some real experience writing simple
 CUDA kernels, using them, and analyzing their performance. You'll implement a
@@ -137,23 +137,6 @@ this implementation as a math/code reference.
 
 For an idea of how the simulation "should" look in 3D,
 [here's what our reference implementation looks like.](https://vimeo.com/181547860)
-
-**Please Note** that our pseudocode, our 2D implementation, and our reference code (from which we derived the parameters that ship with the basecode) differ from Conrad Parker's notes in Rule 3 - our references do not subtract the boid's own velocity from the perceived velocity:
-
-Our pseuodocode:
-```
-    return perceived_velocity * rule3Scale
-```
-Conrad Parker's notes:
-```
-    RETURN (pvJ - bJ.velocity) / 8
-```
-
-This was for no reason other than that the TA who made the references missed this little detail when this project was originally created, but the results looked about right anyway :facepalm:.
-
-Following Conrad Parker's pseudocode exactly may lead to unexpected results using the default parameters that we ship with the project, which you may be able to resolve through parameter tuning. If you find good parameters for the "more correct" Boids implementation, feel free to share them on Piazza!
-
-However, since the purpose of this assignment is to introduce you to CUDA, we recommend at this time that you follow our pseudocode for your initial implementation of the algorithm so you don't have to tune parameters while debugging your implementation.
 
 ### 1.2. Code walkthrough
 
@@ -336,7 +319,7 @@ list of `SOURCE_FILES`), mention it explicitly. Beware of any build issues discu
 
 Open a GitHub pull request so that we can see that you have finished.
 The title should be "Project 1: YOUR NAME".
-The template of the comment section of your pull request is attached below, you can do some copy and paste:
+The template of the comment section of your pull request is attached below, you can do some copy and paste:  
 
 * [Repo Link](https://link-to-your-repo)
 * (Briefly) Mentions features that you've completed. Especially those bells and whistles you want to highlight
