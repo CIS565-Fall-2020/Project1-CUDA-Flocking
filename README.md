@@ -33,4 +33,4 @@ Tested with Coherent Uniform Grid:
 |--|--|--|
 |5k Boids|2098 FPS|2013 FPS|
 |50k Boids|1645 FPS |1406 FPS|
-|50k Boids|1146 FPS |1280 FPS|
+|100k Boids|1146 FPS |1280 FPS|
