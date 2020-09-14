@@ -3,7 +3,7 @@ Project 1 - Flocking**
 
 * Weiyu Du
   * [LinkedIn](https://www.linkedin.com/in/weiyu-du/)
-* Tested on: CETS virtual lab MOR100C-08, Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz
+* Tested on: CETS virtual lab MOR100B-09, Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz
 
 ### Boids Simulation
 <img src="https://github.com/WeiyuDu/Project1-CUDA-Flocking/blob/master/images/boid.png" width="600"/>
