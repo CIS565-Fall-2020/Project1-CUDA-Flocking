@@ -398,6 +398,22 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // - Access each boid in the cell and compute velocity change from
   //   the boids rules, if this boid is within the neighborhood distance.
   // - Clamp the speed change before putting the new speed in vel2
+  int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+  glm::vec3 neighborDet(0.f);
+  glm::vec3 posSelf = glm::fract((pos[index] - gridMin) * inverseCellWidth);
+
+  for (int i = 0; i < 3; i++) {
+    if (posSelf[i] == 0.5f) {
+      neighborDet[i] = 0.f;
+    }
+    else if (posSelf[i] < 0.5f) {
+      neighborDet[i] = -1.f;
+    }
+    else if (posSelf[i] > 0.5f) {
+      neighborDet[i] = 1.f;
+    }
+  }
+
 }
 
 __global__ void kernUpdateVelNeighborSearchCoherent(
