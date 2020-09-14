@@ -442,8 +442,8 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     for (int j = -1; j <= 1; j += 2) {
       for (int k = -1; k <= 1; k += 2) {
         glm::vec3 offset = glm::vec3(i * 0.5 * cellWidth,
-          j * 0.5 * cellWidth,
-          k * 0.5 * cellWidth);
+                                     j * 0.5 * cellWidth,
+                                     k * 0.5 * cellWidth);
         glm::vec3 gridSpacePos = roundPos - gridMin + offset;
         //glm::vec3 offset = glm::vec3(i * 0.5 * cellWidth);
         //glm::vec3 gridSpacePos = roundPos - gridMin + offset;
@@ -474,7 +474,10 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   glm::vec3 cohesion = glm::vec3(0.0f, 0.0f, 0.0f);
   int neighborCount = 0;
 
-  for (int i = 0; (i < 8 && i != -1); i++) {
+  for (int i = 0; i < 8; i++) {
+    if (i < 0 || i >= 8) {
+      break;
+    }
     for (int j = searchGridStart[i]; j <= searchGridEnd[i]; j++) {
       if (particleArrayIndices[j] == index) {
         continue;
@@ -516,49 +519,6 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
 
 // -----------------------------------------------------------------------------
-__global__ void kerntestStartEnd(int N, int gridResolution,
-  glm::vec3 gridMin, float inverseCellWidth,
-  glm::vec3* pos, int* indices, int* gridIndices, glm::vec3* vel2, 
-  int* gridCellStartIndices, int* gridCellEndIndices) {
-  int index = threadIdx.x + (blockIdx.x * blockDim.x);
-  if (index >= N) {
-    return;
-  }
-  glm::vec3 thisPos = pos[index];
-  glm::vec3 gridSpacePos = thisPos - gridMin;
-  //float sideLength = gridResolution / inverseCellWidth;
-  int gridIdx = gridIndex3Dto1D(glm::floor(gridSpacePos.x * inverseCellWidth),
-                                glm::floor(gridSpacePos.y * inverseCellWidth),
-                                glm::floor(gridSpacePos.z * inverseCellWidth),
-                                gridResolution);
-  
-  int start = gridCellStartIndices[gridIdx];
-  int end = gridCellEndIndices[gridIdx];
-  if ((end - start) > 5) {
-  //if (start == end) {
-    vel2[index] = glm::vec3(0.0, 1.0, 0.0);
-  }
-  else {
-    vel2[index] = glm::vec3(0.0, 0.0, 0.0);
-  }
-}
-
-
-__global__ void kerntestStartEnd2(int N, int* gridCellStartIndices, int* gridCellEndIndices, 
-  int* particleArrayIndices, glm::vec3* vel2) {
-  int index = (blockIdx.x * blockDim.x) + threadIdx.x;
-  if (index >= N) {
-    return;
-  }
-  if (index == 2000) {
-    int start = gridCellStartIndices[index];
-    int end = gridCellStartIndices[index];
-    for (int i = start; i <= end; i++) {
-      vel2[particleArrayIndices[i]] = glm::vec3(1.0, 0.0, 0.0);
-    } 
-  }
-}
-
 __global__ void kernCopyVel(int N, glm::vec3* buffer1, glm::vec3* buffer2) {
   int index = (blockIdx.x * blockDim.x) + threadIdx.x;
   if (index >= N) {
