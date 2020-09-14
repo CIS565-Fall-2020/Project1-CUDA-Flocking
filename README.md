@@ -20,6 +20,7 @@ Contects
   - [Method3: Cohesion](#Method3:-Cohesion)
 - [Performance Analysis](#Performance-Analysis)
 - [Questions](#Questions)
+- [Optimization](#Optimization)
 
 
 ## Introduction
