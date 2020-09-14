@@ -66,27 +66,27 @@ dim3 threadsPerBlock(blockSize);
 // Consider why you would need two velocity buffers in a simulation where each
 // boid cares about its neighbors' velocities.
 // These are called ping-pong buffers.
-glm::vec3* dev_pos;
-glm::vec3* dev_vel1;
-glm::vec3* dev_vel2;
+glm::vec3 *dev_pos;
+glm::vec3 *dev_vel1;
+glm::vec3 *dev_vel2;
 
 // LOOK-2.1 - these are NOT allocated for you. You'll have to set up the thrust
 // pointers on your own too.
 
 // For efficient sorting and the uniform grid. These should always be parallel.
-int* dev_particleArrayIndices; // What index in dev_pos and dev_velX represents this particle?
-int* dev_particleGridIndices; // What grid cell is this particle in?
+int *dev_particleArrayIndices; // What index in dev_pos and dev_velX represents this particle?
+int *dev_particleGridIndices; // What grid cell is this particle in?
 // needed for use with thrust
 thrust::device_ptr<int> dev_thrust_particleArrayIndices;
 thrust::device_ptr<int> dev_thrust_particleGridIndices;
 
-int* dev_gridCellStartIndices; // What part of dev_particleArrayIndices belongs
-int* dev_gridCellEndIndices;   // to this cell?
+int *dev_gridCellStartIndices; // What part of dev_particleArrayIndices belongs
+int *dev_gridCellEndIndices;   // to this cell?
 
 // TODO-2.3 - consider what additional buffers you might need to reshuffle
 // the position and velocity data to be coherent within cells.
-glm::vec3* dev_coherentPos;
-glm::vec3* dev_coherentVel;
+glm::vec3 *dev_coherentPos;
+glm::vec3 *dev_coherentVel;
 
 // LOOK-2.1 - Grid parameters based on simulation parameters.
 // These are automatically computed for you in Boids::initSimulation
@@ -132,6 +132,9 @@ __global__ void kernGenerateRandomPosArray(int time, int N, glm::vec3* arr, floa
 		arr[index].x = scale * rand.x;
 		arr[index].y = scale * rand.y;
 		arr[index].z = scale * rand.z;
+
+		//float3 tempVal = make_float3(arr[index].x, arr[index].y, arr[index].z); //To check these values while debugging in warp watch instead 
+																				//of having to watch arr in the memory window 
 	}
 }
 
@@ -183,17 +186,18 @@ void Boids::initSimulation(int N) {
 	cudaMalloc((void**)&dev_gridCellEndIndices, gridCellCount * sizeof(int));
 	checkCUDAErrorWithLine("cudaMalloc dev_gridCellEndIndices failed!");
 
-	dev_thrust_particleArrayIndices = thrust::device_pointer_cast<int>(dev_particleArrayIndices);
-	dev_thrust_particleGridIndices = thrust::device_pointer_cast<int>(dev_particleGridIndices);
-
 	cudaMalloc((void**)&dev_coherentPos, N * sizeof(glm::vec3));
 	checkCUDAErrorWithLine("cudaMalloc dev_gridCellEndIndices failed!");
 
 	cudaMalloc((void**)&dev_coherentVel, N * sizeof(glm::vec3));
 	checkCUDAErrorWithLine("cudaMalloc dev_gridCellEndIndices failed!");
 
+	dev_thrust_particleArrayIndices = thrust::device_pointer_cast<int>(dev_particleArrayIndices);
+	dev_thrust_particleGridIndices = thrust::device_pointer_cast<int>(dev_particleGridIndices);
+
 	cudaDeviceSynchronize();
 }
+
 
 
 /******************
@@ -227,6 +231,7 @@ __global__ void kernCopyVelocitiesToVBO(int N, glm::vec3* vel, float* vbo, float
 	}
 }
 
+
 /**
 * Wrapper for call to the kernCopyboidsToVBO CUDA kernel.
 */
@@ -240,6 +245,8 @@ void Boids::copyBoidsToVBO(float* vbodptr_positions, float* vbodptr_velocities) 
 
 	cudaDeviceSynchronize();
 }
+
+
 
 
 /******************
@@ -508,12 +515,9 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
 
 //Called from stepSimulationCoherentGrid to rearrange Array Index Buffers 
-__global__ void kernRearrange(
-	int N, int* particleArrayIndices,
-	glm::vec3* pos, glm::vec3* vel,
-	glm::vec3* rearrangedPos, glm::vec3* rearrangedVel) {
+__global__ void kernRearrange(int N, int* particleArrayIndices, glm::vec3* pos, glm::vec3* vel, glm::vec3* rearrangedPos, glm::vec3* rearrangedVel) 
+{	
 	// Reshuffle pos and vel for continoug memeory access
-
 	int index = threadIdx.x + blockIdx.x * blockDim.x;
 	if (index >= N)
 		return;
@@ -523,12 +527,12 @@ __global__ void kernRearrange(
 }
 
 //Reshuffle the vel buffers 
-__global__ void kernPingPong(
-	int N, int* particleArrayIndices,
-	glm::vec3* vel2, glm::vec3* vel1) {
+__global__ void kernPingPong(int N, int* particleArrayIndices, glm::vec3* vel2, glm::vec3* vel1) 
+{
 	int index = threadIdx.x + blockIdx.x * blockDim.x;
 	if (index >= N)
 		return;
+
 	vel1[particleArrayIndices[index]] = vel2[index];
 }
 
@@ -700,15 +704,15 @@ void Boids::stepSimulationCoherentGrid(float dt) {
 
 	//Reset the start indices and end indices buffers to -1 
 	kernResetIntBuffer << <fullBlocksPerGridCell, blockSize >> > (gridCellCount, dev_gridCellStartIndices, -1);
-	checkCUDAErrorWithLine("resetting dev_gridCellStartIndices failed ");
+	checkCUDAErrorWithLine("kernResetIntBuffer failed ");
 
 	kernResetIntBuffer << <fullBlocksPerGridCell, blockSize >> > (gridCellCount, dev_gridCellEndIndices, -1);
-	checkCUDAErrorWithLine("resetting dev_gridCellEndIndices failed ");
+	checkCUDAErrorWithLine("kernResetIntBuffer failed ");
 
 	// - Label each particle with its array index as well as its grid index.
 	//   Use 2x width grids
 	kernComputeIndices << <fullBlocksPerGrid, blockSize >> > (N, gridSideCount, gridMinimum, gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
-	checkCUDAErrorWithLine("Computing indices failed ");
+	checkCUDAErrorWithLine("kernComputeIndices failed ");
 
 	// - Unstable key sort using Thrust. A stable sort isn't necessary, but you
 	//   are welcome to do a performance comparison.
@@ -720,25 +724,25 @@ void Boids::stepSimulationCoherentGrid(float dt) {
 	// - Naively unroll the loop for finding the start and end indices of each
 	//   cell's data pointers in the array of boid indices
 	kernIdentifyCellStartEnd << <fullBlocksPerGrid, blockSize >> > (N, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
-	checkCUDAErrorWithLine("Identifying Start and End Boid Points failed ");
+	checkCUDAErrorWithLine("kernIdentifyCellStartEnd failed ");
 
 	// - BIG DIFFERENCE: use the rearranged array index buffer to reshuffle all
 	//   the particle data in the simulation array.
 	//   CONSIDER WHAT ADDITIONAL BUFFERS YOU NEED
 	kernRearrange << <fullBlocksPerGrid, blockSize >> > (N, dev_particleArrayIndices, dev_pos, dev_vel1, dev_coherentPos, dev_coherentVel);
-	checkCUDAErrorWithLine("Shuffling Boid pos and vel data for Coherent Search failed ");
+	checkCUDAErrorWithLine("kernRearrange failed ");
 
 	// - Perform velocity updates using neighbor search
 	kernUpdateVelNeighborSearchCoherent << <fullBlocksPerGrid, blockSize >> > (N, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth, dev_gridCellStartIndices, dev_gridCellEndIndices, dev_coherentPos, dev_coherentVel, dev_vel2);
-	checkCUDAErrorWithLine("Coherent Neighbour search failed ");
+	checkCUDAErrorWithLine("kernUpdateVelNeighborSearchCoherent failed ");
 
 	// - Ping-pong buffers as needed. THIS MAY BE DIFFERENT FROM BEFORE.
 	kernPingPong << <fullBlocksPerGrid, blockSize >> > (N, dev_particleArrayIndices, dev_vel2, dev_vel1);
-	checkCUDAErrorWithLine("Unshuffling velocity boid data failed failed ");
+	checkCUDAErrorWithLine("kernPingPong failed ");
 
 	// - Update positions
 	kernUpdatePos << <fullBlocksPerGrid, blockSize >> > (N, dt, dev_pos, dev_vel1);
-	checkCUDAErrorWithLine("update Position Function Failed");
+	checkCUDAErrorWithLine("kernUpdatePos Failed");
 }
 
 void Boids::endSimulation() {
@@ -747,10 +751,10 @@ void Boids::endSimulation() {
 	cudaFree(dev_pos);
 
 	// TODO-2.1 TODO-2.3 - Free any additional buffers here.
+	cudaFree(dev_gridCellEndIndices);
+	cudaFree(dev_gridCellStartIndices);
 	cudaFree(dev_particleArrayIndices);
 	cudaFree(dev_particleGridIndices);
-	cudaFree(dev_gridCellStartIndices);
-	cudaFree(dev_gridCellEndIndices);
 	cudaFree(dev_coherentPos);
 	cudaFree(dev_coherentVel);
 }
