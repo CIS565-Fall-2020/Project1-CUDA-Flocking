@@ -1,4 +1,4 @@
-#this is a <h1> CUDA Flocking Simulation with Reynold Boids Algorithm
+<h1> CUDA Flocking Simulation with Reynold Boids Algorithm#
 
 ![top](images/top_image.png)
 
