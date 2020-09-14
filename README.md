@@ -36,7 +36,7 @@ In the Boids flocking simulation, we have to consider three rules:
 
 The goal is to search for neighbors of each boid and to calculate the new velocity in terms of the above rules.
 ### Method1: Brute Force
-Firstly, I implemented a naive neighbor search. Suppose we have N boids, we iterate every N - 1 boids. In paralle programming, we can process each boid simultaneously. The following pircture shows the flocking with 5000 boids:
+Firstly, I implemented a naive neighbor search. Suppose we have N boids, we search the other N - 1 boids. In parellel programming, we can process each boid simultaneously. The following pircture shows the flocking with 5000 boids:
 ![](images/naive.PNG)
 ### Method2: Scatter
 Recall that any two boids can only influence each other if they are within some neighborhood distance of each other. We can use a datastructure called uniform spatial grid to avoid checking useless boids. A uniform grid is made up of cells that are at least as wide as the neighborhood distance and covers the entire simulation domain. 
@@ -55,7 +55,7 @@ Then I follow the steps to implement this method:
 
 ![](images/scatter.PNG)
 ### Method3: Cohesion
-It is not efficient to get position and velocity of each boid with index as I implemented in Method2 because the memory is dicrete. So I can shuffle the postion array and velocity array before searching neighbors. In this way, the program can read memory continueously.
+It is not efficient to get position and velocity of each boid with index as I implemented in Method2 because the memory is dicrete. So I can shuffle the postion array and velocity array before searching neighbors. In this way, the program can read memory continuously.
 
 ![buffers for generating a uniform grid using index sort, then making the boid data coherent](images/Boids%20Ugrids%20buffers%20data%20coherent.png)
 
@@ -74,6 +74,7 @@ The fps of the three methods are close at the beginning.
 ![](images/boids2.PNG)
 
 ### FPS vs Blocksize without visualization
+Change in performance is negligible. Blocksize 128 and Blocksize 256 performs better. Explanation is - [here](#For-each-implementation,-how-does-changing-the-block-count-and-block-size-affect-performance?-Why-do-you-think-this-is?).
 
 ![](images/boids3.PNG)
 
@@ -89,7 +90,22 @@ The limit of threads in a block is 1024 on my machine, so I changes the blocksiz
 
 
 ### For the coherent uniform grid: did you experience any performance improvements with the more coherent uniform grid? Was this the outcome you expected? Why or why not?
-Yes. It is expected. Since we store the position and velocity in continuous memory in advance, we can read data without extra indices when searching neighboring boids. Readning discrete memory is inefficient. in addition, the difference between the scatter grid uniform and the coherent uniform grid is almost constant. I think this is because the time for shuffle and indirect indices is constant.
+Yes. It is expected. Since we store the position and velocity in continuous memory in advance, we can read data without extra indices when searching neighboring boids. Reading discrete memory is inefficient. in addition, the difference between the scatter grid uniform and the coherent uniform grid is almost constant. I think this is because the time for shuffle and indirect indices is constant.
 
 ### Did changing cell width and checking 27 vs 8 neighboring cells affect performance? Why or why not? Be careful: it is insufficient (and possibly incorrect) to say that 27-cell is slower simply because there are more cells to check!
 Yes. It is hard to say which one is better. As the cell width increases, we can check less grids but each grid will contain more boids. In addition, if the maxDistance is smaller than the cell width, we may need to check some useless boids in the grid. That means it’s not that the fewer grids the better. On the other hand, if the cell width is too small, we need more memory to store grids. This case is simliar to the naive search. Therefore, we need to find a optimal cell width for uniform grid.
+
+## Optimization
+### Grid-looping optimization (Implemented in Scatter Uniform Grid)
+Firstly, we get a maxDistance which statisfies the distance limits of three rules. This distance is the radius of our searching area.
+```
+maxDistance = max(rule1Distance, max(rule2Distance, rule3Distance))
+```
+Upon we get the maxDistance, we can compute the furthest grid that we can reach.
+```
+maxGrid = thisBoid + maxDistance
+minGrid = thisBoid - maxDistance
+```
+Then we just need to iterate within the range [minGrid, maxGrid]. In addition, we need to clamp the position to keep the grid position in the cube. In this method, we don't need to hard-code the start grid and the end grid.
+
+![](images/optimize.PNG)

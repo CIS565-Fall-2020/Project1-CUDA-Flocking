@@ -447,12 +447,13 @@ __global__ void kernUpdateVelNeighborSearchScattered(
     }
     glm::vec3 thisBoidPos = pos[index];
     float maxDistance = glm::max(glm::max(rule1Distance, rule2Distance), rule3Distance);
-    glm::vec3 maxGridPos = thisBoidPos + maxDistance;
-    glm::vec3 minGridPos = thisBoidPos - maxDistance;
+    glm::vec3 maxDistanceCoord(maxDistance);
+    glm::vec3 maxGridPos = thisBoidPos + maxDistanceCoord;
+    glm::vec3 minGridPos = thisBoidPos - maxDistanceCoord;
     glm::vec3 maxGrid = glm::ceil((maxGridPos - gridMin) * inverseCellWidth);
-    glm::vec3 minGrid = glm::ceil((minGridPos - gridMin) * inverseCellWidth);
-    glm::vec3 gridPos = glm::floor((thisBoidPos - gridMin) * inverseCellWidth);
-    glm::vec3 gridPosCoord = gridPos * cellWidth + gridMin;
+    maxGrid = glm::clamp(maxGrid, glm::vec3(0.0), glm::vec3(gridResolution));
+    glm::vec3 minGrid = glm::floor((minGridPos - gridMin) * inverseCellWidth);
+    minGrid = glm::clamp(minGrid, glm::vec3(0.0), glm::vec3(gridResolution));
 
 
   // - Identify which cells may contain neighbors. This isn't always 8.
@@ -462,7 +463,6 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   // - Clamp the speed change before putting the new speed in vel2
     int neighborCount1 = 0;
     int neighborCount3 = 0;
-    int gridCount = sizeof(gridCellEndIndices) / sizeof(int);
 
     glm::vec3 center(0.0f, 0.0f, 0.0f);
     glm::vec3 separate(0.0f, 0.0f, 0.0f);
@@ -477,7 +477,6 @@ __global__ void kernUpdateVelNeighborSearchScattered(
                 int neighGridZ = k;
 
                 int neighGridIndex = gridIndex3Dto1D(neighGridX, neighGridY, neighGridZ, gridResolution);
-                if (neighGridIndex >= gridCount) continue;
 
                 int startIndex = gridCellStartIndices[neighGridIndex];
                 int endIndex = gridCellEndIndices[neighGridIndex];
