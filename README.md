@@ -13,7 +13,7 @@ This project involved a flocking simulation based on [Conard Parker's notes](htt
 
 ## Performance Analysis Methods
 
-The main measure of the simulation's performance is its, displayed in the top left corner of the window when the simulation runs.
+The main measure of the simulation's performance is its framerate, displayed in the top left corner of the window when the simulation runs.
 
 ![](images/framerate.png)
 
@@ -31,7 +31,7 @@ In the naive implementation of this simulation, every boid checks against all ot
 
 ![](images/graph_naive_perf.png)
 
-This method is essentially an O(n^2) algorithm; with a large number of boids in the simulation, the squared amount of time that this method takes results in the lowest framerate of the three implementations. To confirm this, I measured the average framerate for a varying number of boids in the unvisualized simulation, resulting in the inverse parabolic trajectory shown:
+This method is essentially an O(n^2) algorithm; with a large number of boids in the simulation, the squared amount of time that this method takes results in the lowest framerate of the three implementations. To confirm this, I measured the average framerate for a varying number of boids in the unvisualized simulation, resulting in the inversely parabolic curve shown:
 
 ![](images/graph_naive_bnum.png)
 
@@ -69,12 +69,13 @@ For the most part, this graph follows the same shape as the one for the naive im
 
 When I was implementing the uniform grid search, I did not realize we could hardcode a eight or twenty-seven cube search area. I thought that our radius should accommodate changes in the neighbor distances, not realizing this part is extra credit. But regardless, my implementation does not search cells with a fixed number that needs to be adjusted with the cell width and neighbor distance; it dynamically tests for the maximum distance, then examines all the neighboring cells within that distance (still in a cube pattern) to see which boids influence this one. This makes it flexible, so the cell width and neighbor distance can be adjusted without affecting the algorithm. 
 
-To experiment with the benefits of the grid, I observed the performance of the simulation when the cell width (and therefore the number of cells in the grid) were changed. This was a more informal process, since I just eyeballed the frames per second as a result of each modification. Still, the simulation's performance clearly suffers when the grid is not well-fitted to the maximum search radius for neighbor boids. If the cells are much bigger or smaller than the neighbor radius, then the framerate drops a couple hundred frames per second either way. Logically, if the cells are too big with respect to the neighbor distance, then they will contain too many boids that are way outside of the preset radius. On the other hand, if the cells are too small, then there are a larger number of them to check that isn't worth their size (these cells were less wide than the neighbhor distance). The boids will check the same neighbors if the cells are as big as the radius, and more efficiently. Therefore, there is a balance that must be struck between these two sides in order for the grid to be most effective.
+![](images/Boids%20Ugrid%20neighbor%20search%20shown.png)
 
+To experiment with the benefits of the grid, I observed the performance of the simulation when the cell width (and therefore the number of cells in the grid) were changed. This was a more informal process, since I just eyeballed the frames per second as a result of each modification. Still, the simulation's performance clearly suffers when the grid is not well-fitted to the maximum search radius for neighbor boids. If the cells are much bigger or smaller than the neighbor radius, then the framerate drops a couple hundred frames per second either way. Logically, if the cells are too big with respect to the neighbor distance, then they will contain too many boids that are way outside of the preset radius. On the other hand, if the cells are too small, then there are a larger number of them to check that isn't worth their size (these cells were narrower than the neighbor distance). The boids will check the same neighbors if the cells are as big as the radius, and more efficiently. Therefore, there is a balance that must be struck between these two sides in order for the grid to be most effective.
 
 An issue with using a cube-shaped space is that the radius functions as a sphere, meaning that the corners of the cube are often outside the neighbor search radius, yet are counted anyway because they are a part of the cube. Including these corners means that there is a higher probability to have boids that are out of bounds unnecessarily examined; the more corner area, the more potential unnecessary checks. Since these boids are fairly close to one another due to the flocking behavior, there are probably a good number of these unsuccessful checks made throughout the simulation.
 
-I attempted to refine my algorithm by testing if the cells were inside the sphere of that radius. This source ([x](https://stackoverflow.com/questions/4578967/cube-sphere-intersection-test)) helped me to implement this feature. However, when I tested it on the grids with 5000 boids, the framerate actually dropped a bit rather than increasing. I suppose that this would be more effective in very crowded simulations, or in certain ratios between the cell width and neighbor distance. I have not experimented enough with these to prove when / how this optimization is actually effective. So for now, the corners are still included in the neighbor search.
+I tried to refine my algorithm by testing if the cells were inside the sphere of that radius. I consulted this source ([x](https://stackoverflow.com/questions/4578967/cube-sphere-intersection-test)) for attempting this feature. However, when I tested it on the grids with 5000 boids, the framerate actually dropped a bit rather than increasing. I suppose that this would be more effective in very crowded simulations, or in certain ratios between the cell width and neighbor distance. I have not experimented enough with these to prove when / how this optimization is actually effective. So for now, the corners are still included in the neighbor search.
 
 ## Coherent Data Buffers
 
@@ -92,7 +93,7 @@ Varying the number of boids for the coherent grid causes behavior similar to the
 
 ![](images/graph_coh_bnum.png)
 
-![](images/graph_coh_eyeballed.png)
+![](images/graph_coh_eyeball.png)
 
 The same intense peaks occur for the same amount of boids in both the uniform grid and the coherent grid implementations. Therefore, it's the grid feature specifically that is causing some numbers of boids to have worse performance than others, but the reason is still unclear. Regardless, the coherent grid still outperforms the uniform grid with these boid number changes. A comparison of all three trajectories is below.
 
