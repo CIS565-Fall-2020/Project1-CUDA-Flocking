@@ -10,3 +10,11 @@ Set both 'Tab size' and 'Indent size' to 4 and make sure 'Insert spaces' is sele
 
 You will get a frame not found error while using the NSight debugger if you are using it in Release Mode and 
 not Debug Mode
+
+You should always make this check in your __global__ kernels...
+int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+  if (index >= N) {
+    return;
+  }
+Because you typically deploy moore threads than you actually need. This could potentially cause memory out of 
+bounds errors.

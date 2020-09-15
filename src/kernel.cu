@@ -296,6 +296,9 @@ __global__ void kernUpdateVelocityBruteForce(int N, glm::vec3 *pos,
   glm::vec3 *vel1, glm::vec3 *vel2) {
   // Compute a new velocity based on pos and vel1
   int index = threadIdx.x + (blockIdx.x * blockDim.x);
+  if (index >= N) {
+      return;
+  }
   glm::vec3 velSelf = vel1[index] + computeVelocityChange(N, index, pos, vel1);
   // Clamp the speed
   float speed = glm::length(velSelf);
@@ -348,6 +351,9 @@ __global__ void kernComputeIndices(int N, int gridResolution,
     // - Set up a parallel array of integer indices as pointers to the actual
     //   boid data in pos and vel1/vel2
   int index = threadIdx.x + (blockIdx.x * blockDim.x);
+  if (index >= N) {
+      return;
+  }
   glm::vec3 posSelf = pos[index];
   posSelf = glm::floor(posSelf - gridMin) * inverseCellWidth;
   gridIndices[index] = gridIndex3Dto1D(posSelf.x, posSelf.y, posSelf.z, gridResolution);
@@ -369,7 +375,10 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
   // Identify the start point of each cell in the gridIndices array.
   // This is basically a parallel unrolling of a loop that goes
   // "this index doesn't match the one before it, must be a new cell!"
-
+  int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+  if (index >= N) {
+    return;
+  }
   // at this point particleGridIndices should be sorted
   int prev = particleGridIndices[0];
   gridCellStartIndices[prev] = 0;
