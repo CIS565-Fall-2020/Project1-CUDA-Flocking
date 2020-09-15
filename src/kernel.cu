@@ -407,6 +407,7 @@ __device__ glm::vec3 computeVelocityChangeScattered(int N, int iSelf, const glm:
   glm::vec3 perceivedCenter(0.f);
   glm::vec3 posSelf = pos[iSelf];
   int neighbors = 0;
+
   for (int i = 0; i < 9; i++) {
     if (neighborCells[i] != -1) {
       int start = gridCellStartIndices[neighborCells[i]];
@@ -483,61 +484,125 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   //   the boids rules, if this boid is within the neighborhood distance.
   // - Clamp the speed change before putting the new speed in vel2
   int index = (blockIdx.x * blockDim.x) + threadIdx.x;
-  glm::vec3 neighborDet(0.f);
-  glm::vec3 posSelf = pos[index];
-  glm::vec3 posTemp = glm::fract((pos[index] - gridMin) * inverseCellWidth);
-
-  float3 posSelfF3 = make_float3(posSelf.x, posSelf.y, posSelf.z);
-  float3 posTempF3 = make_float3(posTemp.x, posTemp.y, posTemp.z);
-
-  for (int i = 0; i < 3; i++) {
-    if (posTemp[i] == 0.5f) {
-      neighborDet[i] = 0.f;
-    }
-    else if (posTemp[i] < 0.5f) {
-      neighborDet[i] = -1.f;
-    }
-    else if (posTemp[i] > 0.5f) {
-      neighborDet[i] = 1.f;
-    }
+  if (index >= N) {
+    return;
   }
 
-  float3 nDetF3 = make_float3(neighborDet.x, neighborDet.y, neighborDet.z);
+  float radius = imax(rule1Distance, imax(rule2Distance, rule3Distance));
+  glm::vec3 posSelf = pos[index];
+  glm::vec3 ind3DSelf = glm::floor((posSelf - gridMin) * inverseCellWidth);
+  glm::ivec3 ind3DMin = glm::clamp(glm::ivec3(glm::floor(ind3DSelf - (radius * inverseCellWidth))), glm::ivec3(0), glm::ivec3(gridResolution));
+  glm::ivec3 ind3DMax = glm::clamp(glm::ivec3(glm::floor(ind3DSelf + (radius * inverseCellWidth))), glm::ivec3(0), glm::ivec3(gridResolution));
 
-  glm::vec3 gridMax = gridMin + (gridResolution * cellWidth);
-  float3 gridMaxF3 = make_float3(gridMax.x, gridMax.y, gridMax.z);
+  glm::vec3 perceivedCenter(0.f);
+  int neighborsR1 = 0;
 
+  for (int i = ind3DMin.x; i < ind3DMax.x; i++) {
+    for (int j = ind3DMin.y; j < ind3DMax.y; j++) {
+      for (int k = ind3DMin.z; k < ind3DMax.z; k++) {
+        int neighbor1DInd = gridIndex3Dto1D(i, j, k, gridResolution);
+        int start = gridCellStartIndices[neighbor1DInd];
+        int end = gridCellEndIndices[neighbor1DInd];
+        for (int l = start; l <= end; l++) {
+          // Rule 1 Cohesion: boids fly towards their local perceived center of mass, which excludes themselves
+          for (int i = 0; i < N; i++) {
+            if (i != index && glm::distance(posSelf, pos[i]) < rule1Distance) {
+              perceivedCenter += pos[i];
+              neighborsR1++;
+            }
+          }
 
-  int neighborCells[9];
-  posTemp = glm::floor(pos[index] - gridMin) * inverseCellWidth;
-  neighborCells[8] = gridIndex3Dto1D(posTemp.x, posTemp.y, posTemp.z, gridResolution);
+          if (neighborsR1 != 0) {
+            perceivedCenter /= neighbors; // compute the perceived center of mass by dividing by the number of neighbors
+          }
+          glm::vec3 velSelf = (perceivedCenter - posSelf) * rule1Scale;
 
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 2; j++) {
-      for (int k = 0; k < 2; k++) {
-        glm::vec3 neighborShift(neighborDet * glm::vec3(i % 2, j % 2, k % 2));
-        glm::vec3 neighborPt = neighborShift * cellWidth + posSelf;
-        if (glm::any(glm::lessThan(neighborPt, gridMin)) || glm::any(glm::greaterThan(neighborPt, gridMax))) {
-          neighborCells[i * 4 + j * 2 + k] = -1;
-        }
-        else {
-          neighborPt = glm::floor(neighborPt - gridMin) * inverseCellWidth;
-          float3 nPtF3 = make_float3(neighborPt.x, neighborPt.y, neighborPt.z);
-          neighborCells[i * 4 + j * 2 + k] = gridIndex3Dto1D(neighborPt.x, neighborPt.y, neighborPt.z, gridResolution);
+          // Rule 2 Separation: boids try to stay a distance d away from each other
+          glm::vec3 repulsion(0.f);
+          neighbors = 0;
+          for (int i = 0; i < N; i++) {
+            if (i != iSelf && glm::distance(posSelf, pos[i]) < rule2Distance) {
+              repulsion -= (pos[i] - posSelf);
+              neighbors++;
+            }
+          }
+
+          velSelf += (repulsion * rule2Scale);
+
+          // Rule 3 Alignment: boids try to match the speed of surrounding boids
+          glm::vec3 perceivedVelocity(0.f);
+          neighbors = 0;
+          for (int i = 0; i < N; i++) {
+            if (i != iSelf && glm::distance(posSelf, pos[i]) < rule3Distance) {
+              perceivedVelocity += vel[i];
+              neighbors++;
+            }
+          }
+
+          if (neighbors != 0) {
+            perceivedVelocity /= neighbors; // compute the perceived average velocity by dividing by the number of neighbors
+          }
+          velSelf += (perceivedVelocity * rule3Scale);
         }
       }
     }
   }
 
-  // Compute a new velocity based on pos and vel1
-  glm::vec3 velSelf = vel1[index] + computeVelocityChangeScattered(N, index, pos, vel1, neighborCells, gridCellStartIndices, gridCellEndIndices, particleArrayIndices);
-  // Clamp the speed
-  float speed = glm::length(velSelf);
-  if (speed > maxSpeed)
-      velSelf = (velSelf / speed) * maxSpeed;
-  // Record the new velocity into vel2. Question: why NOT vel1?
-  float3 velSelfF3 = make_float3(velSelf.x, velSelf.y, velSelf.z);
-  vel2[index] = velSelf;
+  //glm::vec3 neighborDet(0.f);
+  //glm::vec3 posSelf = pos[index];
+  //glm::vec3 posTemp = glm::fract((pos[index] - gridMin) * inverseCellWidth);
+
+  //float3 posSelfF3 = make_float3(posSelf.x, posSelf.y, posSelf.z);
+  //float3 posTempF3 = make_float3(posTemp.x, posTemp.y, posTemp.z);
+
+  //for (int i = 0; i < 3; i++) {
+  //  if (posTemp[i] == 0.5f) {
+  //    neighborDet[i] = 0.f;
+  //  }
+  //  else if (posTemp[i] < 0.5f) {
+  //    neighborDet[i] = -1.f;
+  //  }
+  //  else if (posTemp[i] > 0.5f) {
+  //    neighborDet[i] = 1.f;
+  //  }
+  //}
+
+  //float3 nDetF3 = make_float3(neighborDet.x, neighborDet.y, neighborDet.z);
+
+  //glm::vec3 gridMax = gridMin + (gridResolution * cellWidth);
+  //float3 gridMaxF3 = make_float3(gridMax.x, gridMax.y, gridMax.z);
+
+
+  //int neighborCells[9];
+  //posTemp = glm::floor(pos[index] - gridMin) * inverseCellWidth;
+  //neighborCells[8] = gridIndex3Dto1D(posTemp.x, posTemp.y, posTemp.z, gridResolution);
+
+  //for (int i = 0; i < 2; i++) {
+  //  for (int j = 0; j < 2; j++) {
+  //    for (int k = 0; k < 2; k++) {
+  //      glm::vec3 neighborShift(neighborDet * glm::vec3(i % 2, j % 2, k % 2));
+  //      glm::vec3 neighborPt = neighborShift * cellWidth + posSelf;
+  //      if (glm::any(glm::lessThan(neighborPt, gridMin)) || glm::any(glm::greaterThan(neighborPt, gridMax))) {
+  //        neighborCells[i * 4 + j * 2 + k] = -1;
+  //      }
+  //      else {
+  //        neighborPt = glm::floor(neighborPt - gridMin) * inverseCellWidth;
+  //        float3 nPtF3 = make_float3(neighborPt.x, neighborPt.y, neighborPt.z);
+  //        neighborCells[i * 4 + j * 2 + k] = gridIndex3Dto1D(neighborPt.x, neighborPt.y, neighborPt.z, gridResolution);
+  //      }
+  //    }
+  //  }
+  //}
+
+  //// Compute a new velocity based on pos and vel1
+  //glm::vec3 velSelf = vel1[index] + computeVelocityChangeScattered(N, index, pos, vel1, neighborCells, gridCellStartIndices, gridCellEndIndices, particleArrayIndices);
+  //// Clamp the speed
+  //float speed = glm::length(velSelf);
+  //if (speed > maxSpeed)
+  //    velSelf = (velSelf / speed) * maxSpeed;
+  //// Record the new velocity into vel2. Question: why NOT vel1?
+  //float3 velSelfF3 = make_float3(velSelf.x, velSelf.y, velSelf.z);
+  //vel2[index] = velSelf;
 }
 
 __global__ void kernUpdateVelNeighborSearchCoherent(
