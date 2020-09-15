@@ -355,7 +355,7 @@ __global__ void kernComputeIndices(int N, int gridResolution,
       return;
   }
   glm::vec3 posSelf = pos[index];
-  posSelf = glm::floor(posSelf - gridMin) * inverseCellWidth;
+  glm::ivec3 indSelf = glm::floor((posSelf - gridMin) * inverseCellWidth);
   gridIndices[index] = gridIndex3Dto1D(posSelf.x, posSelf.y, posSelf.z, gridResolution);
   indices[index] = index;
 }
@@ -380,16 +380,23 @@ __global__ void kernIdentifyCellStartEnd(int N, int *particleGridIndices,
     return;
   }
   // at this point particleGridIndices should be sorted
-  int prev = particleGridIndices[0];
-  gridCellStartIndices[prev] = 0;
-  for (int i = 1; i < N; i++) {
-    int curr = particleGridIndices[i];
-    if (prev != curr) {
-      gridCellEndIndices[prev] = i - 1;
-      gridCellStartIndices[curr] = i;
-    }
-    prev = curr;
+  int curr = particleGridIndices[index];
+
+  if (index == 0) {
+    gridCellStartIndices[curr] = index;
+    return;
   }
+
+  int prev = particleGridIndices[index - 1];
+
+  if (curr != prev) {
+    gridCellStartIndices[curr] = index;
+    gridCellEndIndices[prev] = index - 1;
+  }
+
+  // the last value of particleGridIndices will never be assigned
+  // to be the end index of the last grid in the particleGridIndices
+  // array. thus it must be set manually.
   gridCellEndIndices[particleGridIndices[N - 1]] = N - 1;
 }
 
@@ -594,7 +601,7 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   thrust::device_ptr<int> dev_thrust_keys(dev_particleGridIndices);
   thrust::device_ptr<int> dev_thrust_values(dev_particleArrayIndices);
   // thrust::sort_by_key
-  thrust::sort_by_key(dev_thrust_keys, dev_thrust_keys + N, dev_thrust_values);
+  thrust::sort_by_key(dev_thrust_keys, dev_thrust_keys + numObjects, dev_thrust_values);
 
   kernIdentifyCellStartEnd<<<fullBlocksPerGrid, blockSize>>>(N, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
   checkCUDAErrorWithLine("kernIdentifyCellStartEnd failed!");
