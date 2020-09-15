@@ -471,23 +471,30 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   glm::vec3 posSelf = pos[index];
   glm::vec3 posTemp = glm::fract((pos[index] - gridMin) * inverseCellWidth);
 
+  float3 posSelfF3 = make_float3(posSelf.x, posSelf.y, posSelf.z);
+  float3 posTempF3 = make_float3(posTemp.x, posTemp.y, posTemp.z);
+
   for (int i = 0; i < 3; i++) {
-    if (posSelf[i] == 0.5f) {
+    if (posTemp[i] == 0.5f) {
       neighborDet[i] = 0.f;
     }
-    else if (posSelf[i] < 0.5f) {
+    else if (posTemp[i] < 0.5f) {
       neighborDet[i] = -1.f;
     }
-    else if (posSelf[i] > 0.5f) {
+    else if (posTemp[i] > 0.5f) {
       neighborDet[i] = 1.f;
     }
   }
 
+  float3 nDetF3 = make_float3(neighborDet.x, neighborDet.y, neighborDet.z);
+
   glm::vec3 gridMax = gridMin + (gridResolution * cellWidth);
+  float3 gridMaxF3 = make_float3(gridMax.x, gridMax.y, gridMax.z);
+
 
   int neighborCells[9];
   posTemp = glm::floor(pos[index] - gridMin) * inverseCellWidth;
-  neighborCells[9] = gridIndex3Dto1D(posTemp.x, posTemp.y, posTemp.z, gridResolution);
+  neighborCells[8] = gridIndex3Dto1D(posTemp.x, posTemp.y, posTemp.z, gridResolution);
 
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
@@ -499,6 +506,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
         }
         else {
           neighborPt = glm::floor(neighborPt - gridMin) * inverseCellWidth;
+          float3 nPtF3 = make_float3(neighborPt.x, neighborPt.y, neighborPt.z);
           neighborCells[i * 4 + j * 2 + k] = gridIndex3Dto1D(neighborPt.x, neighborPt.y, neighborPt.z, gridResolution);
         }
       }
@@ -512,6 +520,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
   if (speed > maxSpeed)
       velSelf = (velSelf / speed) * maxSpeed;
   // Record the new velocity into vel2. Question: why NOT vel1?
+  float3 velSelfF3 = make_float3(velSelf.x, velSelf.y, velSelf.z);
   vel2[index] = velSelf;
 }
 
@@ -563,7 +572,7 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   // - Update positions
   // - Ping-pong buffers as needed
   int N = numObjects;
-  dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize);
+  dim3 fullBlocksPerGrid((numObjects + blockSize - 1) / blockSize); // inexpensive way of computing the ceiling of the division
   // int gridCellCount;
   // int gridSideCount;
   // float gridCellWidth;
@@ -571,6 +580,7 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   // glm::vec3 gridMinimum;
   kernComputeIndices<<<fullBlocksPerGrid, blockSize>>>(N, gridSideCount, gridMinimum, gridInverseCellWidth, dev_pos, dev_particleArrayIndices, dev_particleGridIndices);
   checkCUDAErrorWithLine("kernComputeIndices failed!");
+
   // Wrap device vectors in thrust iterators for use with thrust.
   thrust::device_ptr<int> dev_thrust_keys(dev_particleGridIndices);
   thrust::device_ptr<int> dev_thrust_values(dev_particleArrayIndices);
@@ -578,15 +588,16 @@ void Boids::stepSimulationScatteredGrid(float dt) {
   thrust::sort_by_key(dev_thrust_keys, dev_thrust_keys + N, dev_thrust_values);
 
   kernIdentifyCellStartEnd<<<fullBlocksPerGrid, blockSize>>>(N, dev_particleGridIndices, dev_gridCellStartIndices, dev_gridCellEndIndices);
+  checkCUDAErrorWithLine("kernIdentifyCellStartEnd failed!");
 
-  kernUpdateVelNeighborSearchScattered<<<fullBlocksPerGrid, blockSize>>>(N, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth, 
-    dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
+  kernUpdateVelNeighborSearchScattered<<<fullBlocksPerGrid, blockSize>>>(N, gridSideCount, gridMinimum, gridInverseCellWidth, gridCellWidth, dev_gridCellStartIndices, dev_gridCellEndIndices, dev_particleArrayIndices, dev_pos, dev_vel1, dev_vel2);
+  checkCUDAErrorWithLine("kernUpdateVelNeighborSearchScattered failed!");
 
-  kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(N, dt, dev_pos, dev_vel2);
-  checkCUDAErrorWithLine("kernUpdatePos failed!");
+  //kernUpdatePos<<<fullBlocksPerGrid, blockSize>>>(N, dt, dev_pos, dev_vel2);
+  //checkCUDAErrorWithLine("kernUpdatePos failed!");
 
-  cudaMemcpy(dev_vel1, dev_vel2, N * sizeof(glm::vec3), cudaMemcpyDeviceToDevice);
-  checkCUDAErrorWithLine("memcpy back failed!");
+  //cudaMemcpy(dev_vel1, dev_vel2, N * sizeof(glm::vec3), cudaMemcpyDeviceToDevice);
+  //checkCUDAErrorWithLine("memcpy back failed!");
 }
 
 void Boids::stepSimulationCoherentGrid(float dt) {
