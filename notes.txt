@@ -18,3 +18,9 @@ int index = (blockIdx.x * blockDim.x) + threadIdx.x;
   }
 Because you typically deploy moore threads than you actually need. This could potentially cause memory out of 
 bounds errors.
+
+To fix indentation of highlighted code
+Ctrl+K followed by Ctrl+F
+
+To get rid of CUDA errors for threadIdx, blockIdx, etc...
+#include "device_launch_parameters.h"
