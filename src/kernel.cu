@@ -54,6 +54,7 @@ void checkCUDAError(const char* msg, int line = -1) {
 #define maxSpeed 1.0f
 
 /*! Size of the starting area in simulation space. */
+// i think the scene_scale actually represents the distance from the origin to the positive extent of the simulation space
 #define scene_scale 100.0f
 
 /***********************************************
@@ -159,8 +160,8 @@ void Boids::initSimulation(int N) {
 	checkCUDAErrorWithLine("kernGenerateRandomPosArray failed!");
 
 	// LOOK-2.1 computing grid params
-	gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance);
-	int halfSideCount = (int)(scene_scale / gridCellWidth) + 1;
+	gridCellWidth = 2.0f * std::max(std::max(rule1Distance, rule2Distance), rule3Distance); // doubled because rule distances would be radii
+	int halfSideCount = (int)(scene_scale / gridCellWidth) + 1; // i think the scene_scale actually represents the distance from the origin to the positive extent of the simulation space
 	gridSideCount = 2 * halfSideCount;
 
 	gridCellCount = gridSideCount * gridSideCount * gridSideCount;
@@ -353,8 +354,8 @@ __global__ void kernComputeIndices(int N, int gridResolution,
 		return;
 	}
 	glm::vec3 pos = poss[idx];
-	glm::ivec3 indSelf = glm::floor((pos - gridMin) * inverseCellWidth);
-	gridIndices[idx] = gridIndex3Dto1D(pos.x, pos.y, pos.z, gridResolution);
+	glm::ivec3 gridIdx = glm::floor((pos - gridMin) * inverseCellWidth);
+	gridIndices[idx] = gridIndex3Dto1D(gridIdx.x, gridIdx.y, gridIdx.z, gridResolution);
 	indices[idx] = idx;
 }
 
