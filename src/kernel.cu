@@ -486,6 +486,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 		return;
 	}
 
+	/*
 	float radius = imax(rule1Distance, imax(rule2Distance, rule3Distance));
 	glm::vec3 posSelf = pos[index];
 	glm::vec3 ind3DSelf = glm::floor((posSelf - gridMin) * inverseCellWidth);
@@ -545,6 +546,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 			}
 		}
 	}
+	*/
 
 	//glm::vec3 neighborDet(0.f);
 	//glm::vec3 posSelf = pos[index];
