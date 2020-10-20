@@ -5,7 +5,7 @@ Project 1 - Flocking**
   * [LinkedIn](https://www.linkedin.com/in/jilin-liu-61b273192/), [twitter](https://twitter.com/Jilin18043110).
 * Tested on: Windows 10, i7-8750H @ 2.20GHz, 16GB, GTX 1050Ti 4096MB (personal)
 
-## Results
+## Results 
 
 Demo of flocking with 50000 boids using coherent grid acceleration. Details about the uniform grid structure is discussed in the [instruction](./INSTRUCTION.md).
 
