@@ -482,10 +482,19 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 	// - Access each boid in the cell and compute velocity change from
 	//   the boids rules, if this boid is within the neighborhood distance.
 	// - Clamp the speed change before putting the new speed in vel2
-	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
-	if (index >= N) {
+	int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	if (idx >= N) {
 		return;
 	}
+
+	float radius = imax(rule1Distance, imax(rule2Distance, rule3Distance));
+	glm::vec3 thisPos = pos[idx];
+
+	glm::vec3 gridIdx3D = glm::floor((thisPos - gridMin) * inverseCellWidth);
+	int gridIdx1D = gridIndex3Dto1D(gridIdx3D.x, gridIdx3D.y, gridIdx3D.z, gridResolution);
+
+	glm::ivec3 idx3DMin = glm::clamp(glm::ivec3(glm::floor(gridIdx3D - (radius * inverseCellWidth))), glm::ivec3(0), glm::ivec3(gridResolution));
+	glm::ivec3 idx3DMax = glm::clamp(glm::ivec3(glm::floor(gridIdx3D + (radius * inverseCellWidth))), glm::ivec3(0), glm::ivec3(gridResolution));
 
 	/*
 	float radius = imax(rule1Distance, imax(rule2Distance, rule3Distance));
