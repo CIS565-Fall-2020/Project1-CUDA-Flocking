@@ -452,7 +452,7 @@ __device__ glm::vec3 computeVelocityChangeScattered(int N, int gridResolution, i
 		perceivedVelocity /= neighbors3; // compute the perceived average velocity by dividing by the number of neighbors
 	}
 
-	return ((perceivedCenter - thisPos) * rule1Scale) + (repulsion * rule2Scale) + (perceivedVelocity * rule3Scale);
+	return ((perceivedCenter - thisPos) * rule1Scale * 0.f) + (repulsion * rule2Scale) + (perceivedVelocity * rule3Scale * 0.f);
 
 
 	//for (int i = 0; i < 9; i++) {
@@ -554,7 +554,7 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 	// when they should have read the original information
 	vel2[idx] = vel;
 
-
+	vel2[idx] = gridIdx3D / float(gridResolution);
 	/*
 	float radius = imax(rule1Distance, imax(rule2Distance, rule3Distance));
 	glm::vec3 posSelf = pos[index];
