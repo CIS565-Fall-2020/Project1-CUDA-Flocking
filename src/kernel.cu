@@ -418,11 +418,11 @@ __device__ glm::vec3 computeVelocityChangeScattered(int N, int gridResolution, i
 				int start = gridCellStartIndices[gridIdx1D];
 				int end = gridCellEndIndices[gridIdx1D];
 				for (int l = start; l < end - start; l++) {
-					// exclude the boid's own data for velocity calculation
-					if (l == idx) continue;
-
 					int thatIdx = particleArrayIndices[l];
-					glm::vec3 thatPos = pos[l];
+					// exclude the boid's own data for velocity calculation
+					if (thatIdx == idx) continue;
+
+					glm::vec3 thatPos = pos[thatIdx];
 					// Rule 1 Cohesion: boids fly towards their local perceived center of mass
 					if (glm::distance(thisPos, thatPos) < rule1Distance) {
 						perceivedCenter += thatPos;
@@ -436,7 +436,7 @@ __device__ glm::vec3 computeVelocityChangeScattered(int N, int gridResolution, i
 
 					// Rule 3 Alignment: boids try to match the speed of surrounding boids
 					if (glm::distance(thisPos, thatPos) < rule3Distance) {
-						perceivedVelocity += vel[l];
+						perceivedVelocity += vel[thatIdx];
 						neighbors3++;
 					}
 				}
