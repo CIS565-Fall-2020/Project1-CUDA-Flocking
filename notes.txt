@@ -1,0 +1,26 @@
+The implosion and strange behavior was somehow fixed by adding the change in velocity computation to the old
+velocity which i did not notics had to be done
+
+
+How to change the tab size in Visual Studio...
+Visual Studio
+Open 'Tools' in the Visual Studio Menu and click on 'Options'
+Click on 'Text Editor', then select 'C/C++' and open the 'Tabs' settings.
+Set both 'Tab size' and 'Indent size' to 4 and make sure 'Insert spaces' is selected below.
+
+You will get a frame not found error while using the NSight debugger if you are using it in Release Mode and 
+not Debug Mode
+
+You should always make this check in your __global__ kernels...
+int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+  if (index >= N) {
+    return;
+  }
+Because you typically deploy moore threads than you actually need. This could potentially cause memory out of 
+bounds errors.
+
+To fix indentation of highlighted code
+Ctrl+K followed by Ctrl+F
+
+To get rid of CUDA errors for threadIdx, blockIdx, etc...
+#include "device_launch_parameters.h"
