@@ -7,6 +7,10 @@ Project 1 - Flocking**
 
 ### Demo & Results
 
+![](images/boidsgif.gif)
+
+Gif: coherent mode, 50,000 boids
+
 ![](images/flock.png)
 
 Image 1: coherent mode, 50,000 boids
@@ -19,9 +23,6 @@ Image 2: coherent mode, 50,000 boids
 
 Image 3: coherent mode, 10,000 boids
 
-![](images/boidsgif.gif)
-
-Gif: coherent mode, 50,000 boids
 
 ### Summary of Project
 
