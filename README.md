@@ -28,31 +28,3 @@ I set a CUDA event timer inside the step simulation functions for all 3 modes an
 Mode | Naive | Naive Uniform | Semi-Coherent Uniform
 :---: | :---: | :---: | :---:
 Time (in ms) | 15-16 | 2.7-3.4 | 2.6-3.2
-
-**Impact of particle count on performance**
-
-I recorded the frame rate per second for all 3 simulation modes while maintaining the blockSize equal to 128 but changing the N value. I noted down the approximate fps values on the table below since the value changes very frequently.
-
-**Visualization enabled, N = 10000**
-
-Mode | Naive | Naive Uniform | Semi-Coherent Uniform
-:---: | :---: | :---: | :---:
-Fps | 56 | 205 | 225
-
-**Visualization disabled, N = 10000**
-
-Mode | Naive | Naive Uniform | Semi-Coherent Uniform
-:---: | :---: | :---: | :---:
-Fps | 60 | 287 | 310
-
-**Visualization enabled, N = 50000**
-
-Mode | Naive | Naive Uniform | Semi-Coherent Uniform
-:---: | :---: | :---: | :---:
-Fps | 2.3 | 28.6 | 29.9
-
-**Visualization disabled, N = 50000**
-
-Mode | Naive | Naive Uniform | Semi-Coherent Uniform
-:---: | :---: | :---: | :---:
-Fps | 2.3 | 29.6 | 30.9
